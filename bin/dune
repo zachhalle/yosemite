@@ -1,0 +1,4 @@
+(executable
+ (public_name yosemite)
+ (name main)
+ (libraries yosemite))
