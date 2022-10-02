@@ -1,6 +1,4 @@
 (library
  (name direct)
  (modules direct)
- (libraries
-   variable_lib
-   primitive_lib))
+ (libraries var prim))

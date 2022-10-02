@@ -66,4 +66,4 @@ type term =
 
   | Tlet of variable * term * term
 
-  | Tprim of Primitive.primitive * term list
+  | Tprim of Prim.primitive * term list
