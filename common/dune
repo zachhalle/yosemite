@@ -1,3 +1,7 @@
 (library
- (name variable)
- (modules variable))
+ (name var)
+ (modules var))
+
+(library
+ (name prim)
+ (modules prim))
