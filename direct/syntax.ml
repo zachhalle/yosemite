@@ -21,6 +21,7 @@ and constructor =
   | Csum of constructor list
   | Crec of constructor            (* binds *)
   | Ctag of constructor
+  | Cref of constructor
   | Cexn
   | Cbool
   | Cint
@@ -63,6 +64,10 @@ type term =
 
   | Tbool of bool
   | Tif of term * term * term
+
+  | Tint of int
+  | Tchar of char
+  | Tstring of string
 
   | Tlet of variable * term * term
 
