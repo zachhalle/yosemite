@@ -26,3 +26,45 @@ and constructor =
   | Cint
   | Cchar
   | Cstring
+
+type variable = Var.variable
+
+type term =
+  | Tvar of variable
+  
+  | Tlam of variable * constructor * term
+  | Tapp of term * term
+  
+  | Tplam of kind * term  (* binds *) 
+  | Tpapp of term * constructor
+
+  | Tpack of constructor * term * constructor
+  | Tunpack of variable * term * term  (* binds *)
+
+  | Ttuple of term list
+  | Tproj of term * int
+
+  | Tinj of term * int * constructor
+  | Tcase of term * (variable * term) list
+
+  | Troll of term * constructor
+  | Tunroll of term
+
+  | Ttag of term * term
+  | Tiftag of term * term * variable * term * term
+  | Tnewtag of constructor
+
+  | Traise of term * constructor
+  | Thandle of term * variable * term
+
+  | Tref of term
+  | Tderef of term
+  | Tassign of term * term
+
+  | Tbool of bool
+  | Tif of term * term * term
+
+  | Tlet of variable * term * term
+
+  | Tprim of Primitive.primitive * term list
+

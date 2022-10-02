@@ -1,3 +1,6 @@
 (library
  (name direct)
- (modules direct))
+ (modules direct)
+ (libraries
+   variable_lib
+   primitive_lib))
