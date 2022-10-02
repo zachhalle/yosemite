@@ -39,7 +39,8 @@ end
 
 include ContextFun(
   struct
-    let imposeKind _ = fun x -> x
-    let imposeConstructor _ = fun x -> x
+    (* replace these with identity functions for less error checking but more performance *)
+    let imposeKind = Debug.imposeKind
+    let imposeConstructor = Debug.imposeConstructor
   end
 )
