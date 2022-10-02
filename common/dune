@@ -1,2 +1,3 @@
 (library
- (name yosemite))
+ (name variable)
+ (modules variable))
