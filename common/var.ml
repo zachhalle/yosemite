@@ -1,4 +1,5 @@
 type variable = int
+type t = variable
 
 let next = ref 0
 

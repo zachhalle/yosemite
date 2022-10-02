@@ -1,4 +1,4 @@
 (library
  (name direct)
- (modules direct)
+ (modules subst syntax)
  (libraries var prim))
