@@ -13,7 +13,6 @@ type term = Syntax.term
 val substKindGen : int -> constructor list -> int -> kind -> kind
 val substConGen : int -> constructor list -> int -> constructor -> constructor
 val substTermGen : int -> constructor list -> int -> term -> term
-val dsubstTermGen : int -> constructor list -> int -> term Map.Make(Var).t -> term -> term
 
 val liftKind : int -> kind -> kind
 val liftConstructor : int -> constructor -> constructor
