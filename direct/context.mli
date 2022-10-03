@@ -6,10 +6,10 @@ type context
 
 val empty : context
 
-val lookupKind : context -> int -> kind
-val lookupType : context -> variable -> constructor
+val lookup_kind : context -> int -> kind
+val lookup_type : context -> variable -> constructor
 
-val extendKind : context -> kind -> context
-val extendType : context -> variable -> constructor -> context
+val extend_kind : context -> kind -> context
+val extend_type : context -> variable -> constructor -> context
 
 val ksize : context -> int

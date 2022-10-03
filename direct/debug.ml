@@ -14,15 +14,15 @@ let bottom = Depth.bottom
 let dec path d = Depth.dec (IndexError path) d
 let join path d1 d2 = Depth.join (IndexError path) d1 d2
 
-let rec depthKind path k =
+let rec depth_kind path k =
   match k with
   | Ktype -> bottom
-  | Ksing c -> depthCon (0 :: path) c
-  | Kpi (k1, k2) -> join path (depthKind (0 :: path) k1) (dec path (depthKind (1 :: path) k2))
-  | Ksigma (k1, k2) -> join path (depthKind (0 :: path) k1) (dec path (depthKind (1 :: path) k2))
+  | Ksing c -> depth_con (0 :: path) c
+  | Kpi (k1, k2) -> join path (depth_kind (0 :: path) k1) (dec path (depth_kind (1 :: path) k2))
+  | Ksigma (k1, k2) -> join path (depth_kind (0 :: path) k1) (dec path (depth_kind (1 :: path) k2))
   | Kunit -> bottom
 
-and depthCon path c =
+and depth_con path c =
   match c with
   | Cvar (i, None) ->
     Depth.AtLeast i
@@ -32,48 +32,48 @@ and depthCon path c =
     else
       raise (IndexError (List.rev path))
   | Clam (k, c) ->
-    join path (depthKind (0 :: path) k) (dec path (depthCon (1 :: path) c))
+    join path (depth_kind (0 :: path) k) (dec path (depth_con (1 :: path) c))
   | Capp (c1, c2) ->
-    join path (depthCon (0 :: path) c1) (depthCon (1 :: path) c2)
+    join path (depth_con (0 :: path) c1) (depth_con (1 :: path) c2)
   | Cpair (c1, c2) ->
-    join path (depthCon (0 :: path) c1) (depthCon (1 :: path) c2)
+    join path (depth_con (0 :: path) c1) (depth_con (1 :: path) c2)
   | Cpi1 c ->
-    depthCon (0 :: path) c
+    depth_con (0 :: path) c
   | Cpi2 c ->
-    depthCon (0 :: path) c
+    depth_con (0 :: path) c
   | Cunit -> bottom
-  | Carrow (c1, c2) -> join path (depthCon (0 :: path) c1) (depthCon (1 :: path) c2)
-  | Cforall (k, c) -> join path (depthKind (0 :: path) k) (depthCon (1 :: path) c)
-  | Cexists (k, c) -> join path (depthKind (0 :: path) k) (depthCon (1 :: path) c)
+  | Carrow (c1, c2) -> join path (depth_con (0 :: path) c1) (depth_con (1 :: path) c2)
+  | Cforall (k, c) -> join path (depth_kind (0 :: path) k) (depth_con (1 :: path) c)
+  | Cexists (k, c) -> join path (depth_kind (0 :: path) k) (depth_con (1 :: path) c)
   | Cprod cl ->
-    fst (List.fold_left (fun (d, i) c -> (join path (depthCon (i :: 0 :: path) c) d, i+1)) (bottom, 0) cl)
+    fst (List.fold_left (fun (d, i) c -> (join path (depth_con (i :: 0 :: path) c) d, i+1)) (bottom, 0) cl)
   | Csum cl ->
-    fst (List.fold_left (fun (d, i) c -> (join path (depthCon (i :: 0 :: path) c) d, i+1)) (bottom, 0) cl)
-  | Crec c -> depthCon (0 :: path) c
-  | Ctag c -> depthCon (0 :: path) c
-  | Cref c -> depthCon (0 :: path) c
+    fst (List.fold_left (fun (d, i) c -> (join path (depth_con (i :: 0 :: path) c) d, i+1)) (bottom, 0) cl)
+  | Crec c -> depth_con (0 :: path) c
+  | Ctag c -> depth_con (0 :: path) c
+  | Cref c -> depth_con (0 :: path) c
   | Cexn | Cbool | Cint | Cchar | Cstring -> bottom
 
-let checkKind k =
-  try ignore (depthKind [] k) with
+let check_kind k =
+  try ignore (depth_kind [] k) with
   | IndexError path -> raise (IndexErrorKind (k, None, path))
 
-let checkConstructor c =
-  try ignore (depthCon [] c) with
+let check_constructor c =
+  try ignore (depth_con [] c) with
   | IndexError path -> raise (IndexErrorConstructor (c, None, path))
 
-let rec imposeKindMain path n k =
+let rec impose_kind_main path n k =
    match k with
    | Ktype -> k
    | Ksing c ->
-        Ksing (imposeConMain (0 :: path) n c)
+        Ksing (impose_con_main (0 :: path) n c)
    | Kpi (k1, k2) ->
-        Kpi (imposeKindMain (0 :: path) n k1, imposeKindMain (1 :: path) (n+1) k2)
+        Kpi (impose_kind_main (0 :: path) n k1, impose_kind_main (1 :: path) (n+1) k2)
    | Ksigma (k1, k2) ->
-        Ksigma (imposeKindMain (0 :: path) n k1, imposeKindMain (1 :: path) (n+1) k2)
+        Ksigma (impose_kind_main (0 :: path) n k1, impose_kind_main (1 :: path) (n+1) k2)
    | Kunit -> k
 
-and imposeConMain path n c =
+and impose_con_main path n c =
    match c with
    | Cvar (i, None) ->
         if i < n then
@@ -86,98 +86,98 @@ and imposeConMain path n c =
         else
            raise (IndexError (List.rev path))
    | Clam (k, c) ->
-        Clam (imposeKindMain (0 :: path) n k, imposeConMain (1 :: path) (n+1) c)
+        Clam (impose_kind_main (0 :: path) n k, impose_con_main (1 :: path) (n+1) c)
    | Capp (c1, c2) ->
-        Capp (imposeConMain (0 :: path) n c1, imposeConMain (1 :: path) n c2)
+        Capp (impose_con_main (0 :: path) n c1, impose_con_main (1 :: path) n c2)
    | Cpair (c1, c2) ->
-        Cpair (imposeConMain (0 :: path) n c1, imposeConMain (1 :: path) n c2)
+        Cpair (impose_con_main (0 :: path) n c1, impose_con_main (1 :: path) n c2)
    | Cpi1 c ->
-        Cpi1 (imposeConMain (0 :: path) n c)
+        Cpi1 (impose_con_main (0 :: path) n c)
    | Cpi2 c ->
-        Cpi2 (imposeConMain (0 :: path) n c)
+        Cpi2 (impose_con_main (0 :: path) n c)
    | Cunit -> c
    | Carrow (c1, c2) ->
-        Carrow (imposeConMain (0 :: path) n c1, imposeConMain (1 :: path) n c2)
+        Carrow (impose_con_main (0 :: path) n c1, impose_con_main (1 :: path) n c2)
    | Cforall (k, c) ->
-        Cforall (imposeKindMain (0 :: path) n k, imposeConMain (1 :: path) (n+1) c)
+        Cforall (impose_kind_main (0 :: path) n k, impose_con_main (1 :: path) (n+1) c)
    | Cexists (k, c) ->
-        Cexists (imposeKindMain (0 :: path) n k, imposeConMain (1 :: path) (n+1) c)
+        Cexists (impose_kind_main (0 :: path) n k, impose_con_main (1 :: path) (n+1) c)
    | Cprod cl ->
-        Cprod (List.mapi (fun i c -> imposeConMain (i :: 0 :: path) n c) cl)
+        Cprod (List.mapi (fun i c -> impose_con_main (i :: 0 :: path) n c) cl)
    | Csum cl ->
-        Csum (List.mapi (fun i c -> imposeConMain (i :: 0 :: path) n c) cl)
+        Csum (List.mapi (fun i c -> impose_con_main (i :: 0 :: path) n c) cl)
    | Crec c ->
-        Crec (imposeConMain (0 :: path) (n+1) c)
+        Crec (impose_con_main (0 :: path) (n+1) c)
    | Ctag c ->
-        Ctag (imposeConMain (0 :: path) n c)
+        Ctag (impose_con_main (0 :: path) n c)
    | Cref c ->
-        Cref (imposeConMain (0 :: path) n c)
+        Cref (impose_con_main (0 :: path) n c)
    | Cexn | Cbool | Cint | Cchar | Cstring -> c
 
-let rec imposeTermMain path n e =
+let rec impose_term_main path n e =
    match e with
    | Tvar _ ->
         e
    | Tlam (v, c, e') ->
-        Tlam (v, imposeConMain (1 :: path) n c, imposeTermMain (2 :: path) n e')
+        Tlam (v, impose_con_main (1 :: path) n c, impose_term_main (2 :: path) n e')
    | Tapp (e1, e2) ->
-        Tapp (imposeTermMain (0 :: path) n e1, imposeTermMain (1 :: path) n e2)
+        Tapp (impose_term_main (0 :: path) n e1, impose_term_main (1 :: path) n e2)
    | Tplam (k, e') ->
-        Tplam (imposeKindMain (0 :: path) n k, imposeTermMain (1 :: path) (n+1) e')
+        Tplam (impose_kind_main (0 :: path) n k, impose_term_main (1 :: path) (n+1) e')
    | Tpapp (e', c) ->
-        Tpapp (imposeTermMain (0 :: path) n e', imposeConMain (1 :: path) n c)
+        Tpapp (impose_term_main (0 :: path) n e', impose_con_main (1 :: path) n c)
    | Tpack (c1, e', c2) ->
-        Tpack (imposeConMain (0 :: path) n c1, imposeTermMain (1 :: path) n e', imposeConMain (2 :: path) n c2)
+        Tpack (impose_con_main (0 :: path) n c1, impose_term_main (1 :: path) n e', impose_con_main (2 :: path) n c2)
    | Tunpack (v, e1, e2) ->
-        Tunpack (v, imposeTermMain (1 :: path) n e1, imposeTermMain (2 :: path) (n+1) e2)
+        Tunpack (v, impose_term_main (1 :: path) n e1, impose_term_main (2 :: path) (n+1) e2)
    | Ttuple el ->
-        Ttuple (List.mapi (fun i e -> imposeTermMain (i :: 0 :: path) n e) el)
+        Ttuple (List.mapi (fun i e -> impose_term_main (i :: 0 :: path) n e) el)
    | Tproj (e', i) ->
-        Tproj (imposeTermMain (0 :: path) n e', i)
+        Tproj (impose_term_main (0 :: path) n e', i)
    | Tinj (e', i, c) ->
-        Tinj (imposeTermMain (0 :: path) n e', i, imposeConMain (2 :: path) n c)
+        Tinj (impose_term_main (0 :: path) n e', i, impose_con_main (2 :: path) n c)
    | Tcase (e', arms) ->
-        Tcase (imposeTermMain (0 :: path) n e',
-               List.mapi (fun i (v, e) -> (v, imposeTermMain (1 :: i :: 1 :: path) n e)) arms)
+        Tcase (impose_term_main (0 :: path) n e',
+               List.mapi (fun i (v, e) -> (v, impose_term_main (1 :: i :: 1 :: path) n e)) arms)
    | Troll (e', c) ->
-        Troll (imposeTermMain (0 :: path) n e', imposeConMain (1 :: path) n c)
+        Troll (impose_term_main (0 :: path) n e', impose_con_main (1 :: path) n c)
    | Tunroll e' ->
-        Tunroll (imposeTermMain (0 :: path) n e')
+        Tunroll (impose_term_main (0 :: path) n e')
    | Ttag (e1, e2) ->
-        Ttag (imposeTermMain (0 :: path) n e1, imposeTermMain (1 :: path) n e2)
+        Ttag (impose_term_main (0 :: path) n e1, impose_term_main (1 :: path) n e2)
    | Tiftag (e1, e2, v, e3, e4) ->
-        Tiftag (imposeTermMain (0 :: path) n e1, imposeTermMain (1 :: path) n e2, v, imposeTermMain (3 :: path) n e3, imposeTermMain (4 :: path) n e4)
+        Tiftag (impose_term_main (0 :: path) n e1, impose_term_main (1 :: path) n e2, v, impose_term_main (3 :: path) n e3, impose_term_main (4 :: path) n e4)
    | Tnewtag c ->
-        Tnewtag (imposeConMain (0 :: path) n c)
+        Tnewtag (impose_con_main (0 :: path) n c)
    | Traise (e', c) ->
-        Traise (imposeTermMain (0 :: path) n e', imposeConMain (1 :: path) n c)
+        Traise (impose_term_main (0 :: path) n e', impose_con_main (1 :: path) n c)
    | Thandle (e1, v, e2) ->
-        Thandle (imposeTermMain (0 :: path) n e1, v, imposeTermMain (2 :: path) n e2)
+        Thandle (impose_term_main (0 :: path) n e1, v, impose_term_main (2 :: path) n e2)
    | Tref e' ->
-        Tref (imposeTermMain (0 :: path) n e')
+        Tref (impose_term_main (0 :: path) n e')
    | Tderef e' ->
-        Tderef (imposeTermMain (0 :: path) n e')
+        Tderef (impose_term_main (0 :: path) n e')
    | Tassign (e1, e2) ->
-        Tassign (imposeTermMain (0 :: path) n e1, imposeTermMain (1 :: path) n e2)
+        Tassign (impose_term_main (0 :: path) n e1, impose_term_main (1 :: path) n e2)
    | Tbool _ -> e
    | Tif (e1, e2, e3) ->
-        Tif (imposeTermMain (0 :: path) n e1, imposeTermMain (1 :: path) n e2, imposeTermMain (2 :: path) n e3)
+        Tif (impose_term_main (0 :: path) n e1, impose_term_main (1 :: path) n e2, impose_term_main (2 :: path) n e3)
    | Tint _ -> e
    | Tchar _ -> e
    | Tstring _ -> e
    | Tlet (v, e1, e2) ->
-        Tlet (v, imposeTermMain (1 :: path) n e1, imposeTermMain (2 :: path) n e2)
+        Tlet (v, impose_term_main (1 :: path) n e1, impose_term_main (2 :: path) n e2)
    | Tprim (prim, el) ->
-        Tprim (prim, List.mapi (fun i e -> imposeTermMain (i :: 1 :: path) n e) el)
+        Tprim (prim, List.mapi (fun i e -> impose_term_main (i :: 1 :: path) n e) el)
 
-let imposeKind n k =
-  try imposeKindMain [] n k with
+let impose_kind n k =
+  try impose_kind_main [] n k with
   | IndexError path -> raise (IndexErrorKind (k, Some n, path))
 
-let imposeConstructor n c =
-  try imposeConMain [] n c with
+let impose_constructor n c =
+  try impose_con_main [] n c with
   | IndexError path -> raise (IndexErrorConstructor (c, Some n, path))
 
-let imposeTerm n e =
-  try imposeTermMain [] n e with
+let impose_term n e =
+  try impose_term_main [] n e with
   | IndexError path -> raise (IndexErrorTerm (e, Some n, path))

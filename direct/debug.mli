@@ -6,9 +6,9 @@ exception IndexErrorKind of kind * int option * int list
 exception IndexErrorConstructor of constructor * int option * int list
 exception IndexErrorTerm of term * int option * int list
 
-val checkKind : kind -> unit
-val checkConstructor : constructor -> unit
+val check_kind : kind -> unit
+val check_constructor : constructor -> unit
 
-val imposeKind : int -> kind -> kind
-val imposeConstructor : int -> constructor -> constructor
-val imposeTerm : int -> term -> term
+val impose_kind : int -> kind -> kind
+val impose_constructor : int -> constructor -> constructor
+val impose_term : int -> term -> term

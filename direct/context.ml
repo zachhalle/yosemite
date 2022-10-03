@@ -1,7 +1,7 @@
 module ContextFun (
   Debug : sig
-    val imposeKind : int -> Syntax.kind -> Syntax.kind
-    val imposeConstructor : int -> Syntax.constructor -> Syntax.constructor
+    val impose_kind : int -> Syntax.kind -> Syntax.kind
+    val impose_constructor : int -> Syntax.constructor -> Syntax.constructor
   end
 ) = struct
 
@@ -16,23 +16,23 @@ module ContextFun (
 
   let empty = { ksize = 0 ; kctx = [] ; tctx = Dict.empty }
 
-  let lookupKind ({ kctx ; _ } : context) i =
+  let lookup_kind ({ kctx ; _ } : context) i =
     try Subst.liftKind (i+1) (List.nth kctx i) with
     | Failure _ -> failwith "Type error."
 
-  let lookupType ({ ksize ; tctx ; _ } : context) v =
+  let lookup_type ({ ksize ; tctx ; _ } : context) v =
     let n, c = try Dict.find v tctx with Not_found -> failwith "Type error." in
     Subst.liftConstructor (ksize-n) c
 
-  let extendKind { ksize ; kctx ; tctx } k =
+  let extend_kind { ksize ; kctx ; tctx } k =
     { ksize = ksize + 1 ; 
-      kctx = imposeKind ksize k :: kctx ;
+      kctx = impose_kind ksize k :: kctx ;
       tctx = tctx }
 
-  let extendType { ksize ; kctx ; tctx } v c =
+  let extend_type { ksize ; kctx ; tctx } v c =
     { ksize = ksize ;
       kctx = kctx ;
-      tctx = Dict.add v (ksize, imposeConstructor ksize c) tctx }
+      tctx = Dict.add v (ksize, impose_constructor ksize c) tctx }
 
   let ksize ({ ksize ; _ } : context) = ksize
 end
@@ -40,7 +40,7 @@ end
 include ContextFun(
   struct
     (* replace these with identity functions for less error checking but more performance *)
-    let imposeKind = Debug.imposeKind
-    let imposeConstructor = Debug.imposeConstructor
+    let impose_kind = Debug.impose_kind
+    let impose_constructor = Debug.impose_constructor
   end
 )
