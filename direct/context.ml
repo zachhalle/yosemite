@@ -17,12 +17,12 @@ module ContextFun (
   let empty = { ksize = 0 ; kctx = [] ; tctx = Dict.empty }
 
   let lookup_kind ({ kctx ; _ } : context) i =
-    try Subst.liftKind (i+1) (List.nth kctx i) with
+    try Subst.lift_kind (i+1) (List.nth kctx i) with
     | Failure _ -> failwith "Type error."
 
   let lookup_type ({ ksize ; tctx ; _ } : context) v =
     let n, c = try Dict.find v tctx with Not_found -> failwith "Type error." in
-    Subst.liftConstructor (ksize-n) c
+    Subst.lift_constructor (ksize-n) c
 
   let extend_kind { ksize ; kctx ; tctx } k =
     { ksize = ksize + 1 ; 

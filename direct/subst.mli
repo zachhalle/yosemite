@@ -10,14 +10,14 @@ type term = Syntax.term
         = [e0[^m] .. ep-1[^m] / v0 .. vp-1] (e[0 .. m-1 . s0[^m] .. sn-1[^m] . ^l+m])
  *)
 
-val substKindGen : int -> constructor list -> int -> kind -> kind
-val substConGen : int -> constructor list -> int -> constructor -> constructor
-val substTermGen : int -> constructor list -> int -> term -> term
+val subst_kind_gen : int -> constructor list -> int -> kind -> kind
+val subst_con_gen : int -> constructor list -> int -> constructor -> constructor
+val subst_term_gen : int -> constructor list -> int -> term -> term
 
-val liftKind : int -> kind -> kind
-val liftConstructor : int -> constructor -> constructor
-val liftTerm : int -> term -> term
+val lift_kind : int -> kind -> kind
+val lift_constructor : int -> constructor -> constructor
+val lift_term : int -> term -> term
 
-val substKind : constructor -> kind -> kind
-val substConstructor : constructor -> constructor -> constructor
-val substTerm : constructor -> term -> term
+val subst_kind : constructor -> kind -> kind
+val subst_constructor : constructor -> constructor -> constructor
+val subst_term : constructor -> term -> term
