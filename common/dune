@@ -9,3 +9,7 @@
 (library
  (name depth)
  (modules depth))
+
+(library
+ (name type_error)
+ (modules type_error))

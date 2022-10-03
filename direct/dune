@@ -1,4 +1,4 @@
 (library
  (name direct)
- (modules context debug subst syntax)
- (libraries depth var prim))
+ (modules context debug subst syntax typing)
+ (libraries depth var prim type_error))
