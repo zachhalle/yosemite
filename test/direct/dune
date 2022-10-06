@@ -1,0 +1,6 @@
+(library
+ (name subst)
+ (modules subst)
+ (inline_tests)
+ (preprocess (pps ppx_expect ppx_inline_test))
+ (libraries base direct))
