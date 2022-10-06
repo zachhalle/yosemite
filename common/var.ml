@@ -1,5 +1,5 @@
-type variable = int
-type t = variable
+type variable = int [@@deriving show]
+type t = variable 
 
 let next = ref 0
 

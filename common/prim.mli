@@ -16,3 +16,6 @@ type primitive =
    | Eq_string
    | Lt_string
    | Print
+
+val pp_primitive : Format.formatter -> primitive -> unit
+val show_primitive : primitive -> string

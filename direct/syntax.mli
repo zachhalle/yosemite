@@ -72,3 +72,7 @@ type term =
   | Tlet of variable * term * term
 
   | Tprim of Prim.primitive * term list
+
+val show_kind : kind -> string
+val show_constructor : constructor -> string
+val show_term : term -> string

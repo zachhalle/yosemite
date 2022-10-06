@@ -1,9 +1,12 @@
+open Var
+
 type kind =
   | Ktype
   | Ksing of constructor
   | Kpi of kind * kind     (* binds *)
   | Ksigma of kind * kind  (* binds *)
   | Kunit 
+  [@@deriving show]
 
 and constructor =
   | Cvar of int * int option
@@ -27,6 +30,7 @@ and constructor =
   | Cint
   | Cchar
   | Cstring
+  [@@deriving show]
 
 type variable = Var.variable
 
@@ -72,4 +76,5 @@ type term =
   | Tlet of variable * term * term
 
   | Tprim of Prim.primitive * term list
+  [@@deriving show]
 

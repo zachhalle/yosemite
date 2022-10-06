@@ -16,3 +16,4 @@ type primitive =
    | Eq_string
    | Lt_string
    | Print
+   [@@deriving show]

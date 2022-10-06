@@ -1,10 +1,12 @@
 (library
  (name var)
- (modules var))
+ (modules var)
+ (preprocess (pps ppx_deriving.show)))
 
 (library
  (name prim)
- (modules prim))
+ (modules prim)
+ (preprocess (pps ppx_deriving.show)))
 
 (library
  (name depth)
