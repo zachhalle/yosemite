@@ -1,0 +1,1 @@
+This is a type-directed compiler for ML. It's based on the starter code from Karl Crary's Higher Order Type Compilation course at Carnegie Mellon University, as well as my notes from that course, which I took in 2017.
