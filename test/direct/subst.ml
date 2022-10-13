@@ -137,3 +137,44 @@ let%expect_test "lift_constructor 10 (Cforall (Cexists (Cforall (Cvar 3))))" =
           (Syntax.Cforall (Syntax.Ktype, (Syntax.Cvar (13, None))))))
        )) |}]
 
+(* lift_term *)
+
+let%expect_test "lift_term 10 (Tunpack (Tvar 0, Tvar 1, Tplam (Ktype, Tplam (Ktype, Tpapp (Tvar 2, Cvar 0)))))" =
+  let result = lift_term 10 (
+    Tunpack (0, Tvar 1, Tplam (Ktype, Tplam (Ktype, Tpapp (Tvar 2, Cvar (0, None)))))
+  ) in
+  printf "%s\n" (show_term result);
+  [%expect {|
+    (Syntax.Tunpack (0, (Syntax.Tvar 1),
+       (Syntax.Tplam (Syntax.Ktype,
+          (Syntax.Tplam (Syntax.Ktype,
+             (Syntax.Tpapp ((Syntax.Tvar 2), (Syntax.Cvar (0, None))))))
+          ))
+       )) |}]
+
+let%expect_test "lift_term 10 (Tunpack (Tvar 0, Tvar 1, Tplam (Ktype, Tplam (Ktype, Tpapp (Tvar 2, Cvar 2)))))" =
+  let result = lift_term 10 (
+    Tunpack (0, Tvar 1, Tplam (Ktype, Tplam (Ktype, Tpapp (Tvar 2, Cvar (2, None)))))
+  ) in
+  printf "%s\n" (show_term result);
+  [%expect {|
+    (Syntax.Tunpack (0, (Syntax.Tvar 1),
+       (Syntax.Tplam (Syntax.Ktype,
+          (Syntax.Tplam (Syntax.Ktype,
+             (Syntax.Tpapp ((Syntax.Tvar 2), (Syntax.Cvar (2, None))))))
+          ))
+       )) |}]
+
+ let%expect_test "lift_term 10 (Tunpack (Tvar 0, Tvar 1, Tplam (Ktype, Tplam (Ktype, Tpapp (Tvar 2, Cvar 3)))))" =
+  let result = lift_term 10 (
+    Tunpack (0, Tvar 1, Tplam (Ktype, Tplam (Ktype, Tpapp (Tvar 2, Cvar (3, None)))))
+  ) in
+  printf "%s\n" (show_term result);
+   [%expect {|
+     (Syntax.Tunpack (0, (Syntax.Tvar 1),
+        (Syntax.Tplam (Syntax.Ktype,
+           (Syntax.Tplam (Syntax.Ktype,
+              (Syntax.Tpapp ((Syntax.Tvar 2), (Syntax.Cvar (13, None))))))
+           ))
+        )) |}]
+
