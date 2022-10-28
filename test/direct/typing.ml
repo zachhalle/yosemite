@@ -60,7 +60,7 @@ let%expect_test "whreduce (Cpi1 (Cpair (Capp (Clam (Ktype, Cvar 0), Cbool), Cint
   printf "%s\n" (show_constructor result);
   [%expect {| Syntax.Cbool |}]
 
-let%expect_test "whreduce (Cpi2 (Cpair (Capp (Clam (Ktype, Cvar 0), Cbool), Cint)))" =
+let%expect_test "whreduce (Cpi2 (Cpair (Cint, Capp (Clam (Ktype, Cvar 0), Cbool))))" =
   let result = whreduce (Cpi2 (Cpair (Cint, Capp (Clam (Ktype, Cvar (0, None)), Cbool)))) in
   printf "%s\n" (show_constructor result);
   [%expect {| Syntax.Cbool |}]
