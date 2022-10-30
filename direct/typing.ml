@@ -140,8 +140,8 @@ let rec subkind ctx k1 k2 =
   | Ksing c1, Ksing c2 -> equiv ctx c1 c2 Ktype
   | Ksing _, Ktype -> ()
   | Kpi (k1a, k1b), Kpi (k2a, k2b) ->
-    subkind ctx k1a k2a;
-    subkind (extend_kind ctx k1a) k1b k2b;
+    subkind ctx k2a k1a;
+    subkind (extend_kind ctx k2a) k1b k2b;
   | Ksigma (k1a, k1b), Ksigma (k2a, k2b) ->
     subkind ctx k1a k2a;
     subkind (extend_kind ctx k1a) k1b k2b
