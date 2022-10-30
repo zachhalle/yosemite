@@ -7,6 +7,7 @@ module ContextFun (
 
   module Dict = Map.Make(Var)
   open Debug
+  open Type_error
 
   type kind = Syntax.kind
   type constructor = Syntax.constructor
@@ -18,10 +19,10 @@ module ContextFun (
 
   let lookup_kind ({ kctx ; _ } : context) i =
     try Subst.lift_kind (i+1) (List.nth kctx i) with
-    | Failure _ -> failwith "Type error."
+    | Failure _ -> raise Type_error
 
   let lookup_type ({ ksize ; tctx ; _ } : context) v =
-    let n, c = try Dict.find v tctx with Not_found -> failwith "Type error." in
+    let n, c = try Dict.find v tctx with Not_found -> raise Type_error in
     Subst.lift_constructor (ksize-n) c
 
   let extend_kind { ksize ; kctx ; tctx } k =
