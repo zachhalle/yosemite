@@ -196,3 +196,204 @@ let%expect_test "whnf {Ksing Cbool, Ksing (Capp (Clam (Ktype, Cvar 0), Cvar 1))}
   handle_error show_constructor f;
   [%expect {| Uncaught exception: IndexErrorKind. |}]
 
+(* equiv *)
+
+let show_unit () = "()"
+
+let%expect_test "equiv {} Cexn Cexn : Ktype" =
+  let f () = equiv empty Cexn Cexn Ktype in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} Cint Cexn : Ktype" =
+  let f () = equiv empty Cint Cexn Ktype in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "equiv {} (Carrow (Cint, Cbool)) (Carrow (Cint, Cbool)) : Ktype" =
+  let f () = equiv empty (Carrow (Cint, Cbool)) (Carrow (Cint, Cbool)) Ktype in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {Ktype} (Cvar 0) (Cint) : Ktype" =
+  let f () = equiv (extend_kind empty Ktype) (Cvar (0, None)) Cint Ktype in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "equiv {Ksing Cint} (Cvar 0) (Cint) : Ksing Cint" =
+  let f () = equiv (extend_kind empty (Ksing Cint)) (Cvar (0, None)) Cint (Ksing Cint) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+(* this one is worth studying *)
+let%expect_test "equiv {Kpi (Ktype, Ksing (Cvar (0, None)))} (Capp (Cvar 0, Cint)) Cint : Ktype" =
+  let f () =
+    equiv
+      (extend_kind empty (Kpi (Ktype, Ksing (Cvar (0, None)))))
+      (Capp (Cvar (0, None), Cint))
+      Cint
+      Ktype
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {Kpi (Ktype, Ktype)} (Capp (Cvar 0, Cint)) Cint : Ktype" =
+  let f () =
+    equiv
+      (extend_kind empty (Kpi (Ktype, Ktype)))
+      (Capp (Cvar (0, None), Cint))
+      Cint
+      Ktype
+  in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "equiv {} (Capp (Clam (Ktype, Cvar 0), Cexn)) Cexn : Ktype" =
+  let f () = equiv empty (Capp (Clam (Ktype, Cvar (0, None)), Cexn)) Cexn Ktype in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (Capp (Clam (Ktype, Cvar 0), Cexn)) Cexn : Ktype" =
+  let f () = equiv empty (Capp (Clam (Ksing Cexn, Cvar (0, None)), Cexn)) Cexn Ktype in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (Capp (Clam (Ktype, Cexn), Cint)) Cexn : Ktype" =
+  let f () = equiv empty (Capp (Clam (Ktype, Cexn), Cint)) Cexn Ktype in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (Capp (Clam (Ktype, Cint), Cexn)) Cexn : Ktype" =
+  let f () = equiv empty (Capp (Clam (Ktype, Cint), Cexn)) Cexn Ktype in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "equiv {} (Cpi1 (Cpair (Cexn, Cint))) Cexn : Ktype" =
+  let f () = equiv empty (Cpi1 (Cpair (Cexn, Cint))) Cexn Ktype in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (Cpi2 (Cpair (Cexn, Cint))) Cexn : Ktype" =
+  let f () = equiv empty (Cpi2 (Cpair (Cexn, Cint))) Cexn Ktype in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "equiv {} (Cpi2 (Cpair (Cexn, Cint))) Cexn : Ktype" =
+  let f () = equiv empty (Cpi2 (Cpair (Cexn, Cint))) Cint Ktype in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (Capp (Clam (Ktype, Cpi1 (Cvar 0)), Cpair (Cexn, Cint))) Cexn : Ktype" =
+  let f () =
+    equiv empty
+      (Capp (Clam (Ktype, Cpi1 (Cvar (0, None))), Cpair (Cexn, Cint)))
+      Cexn
+      Ktype
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test
+  "equiv {} (Capp (Clam (Ktype, Cpair (Cvar 0, Cvar 0)), Cbool)) (Cpair (Cbool, Cbool)) : Ksigma (Ktype, Ktype)" =
+  let f () =
+    equiv empty
+      (Capp (Clam (Ktype, Cpair (Cvar (0, None), Cvar (0, None))), Cbool))
+      (Cpair (Cbool, Cbool))
+      (Ksigma (Ktype, Ktype))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (Clam (Ktype, Cvar (0, None))) (Clam (Ktype, Cvar (0, None))) : Kpi (Ktype, Ktype)" =
+  let f () = equiv empty (Clam (Ktype, Cvar (0, None))) (Clam (Ktype, Cvar (0, None))) (Kpi (Ktype, Ktype)) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test
+  "equiv {} (Clam (Ktype, Cvar (0, None))) (Clam (Ktype, Cvar (0, None))) : Kpi (Ktype, Ksing (Cvar 0))" =
+  let f () =
+    equiv empty
+      (Clam (Ktype, Cvar (0, None)))
+      (Clam (Ktype, Cvar (0, None)))
+      (Kpi (Ktype, Ksing (Cvar (0, None))))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+
+let%expect_test "equiv {} (Clam (Ktype, Cint)) (Clam (Ktype, Cvar (0, None))) : Kpi (Ktype, Ktype)" =
+  let f () = equiv empty (Clam (Ktype, Cint)) (Clam (Ktype, Cvar (0, None))) (Kpi (Ktype, Ktype)) in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "equiv {} (Clam (Ksing Cint, Cint)) (Clam (Ktype, Cvar (0, None))) : Kpi (Ksing Cint, Ksing Cint)" =
+  let f () =
+    equiv empty
+      (Clam (Ksing Cint, Cint))
+      (Clam (Ksing Cint, Cvar (0, None)))
+      (Kpi (Ksing Cint, Ksing Cint))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (Clam (Ktype, Cint)) (Clam (Ksing Cint, Cvar (0, None))) : Kpi (Ksing Cint, Ksing Cint)" =
+  let f () =
+    equiv empty
+      (Clam (Ktype, Cint))
+      (Clam (Ksing Cint, Cvar (0, None)))
+      (Kpi (Ksing Cint, Ksing Cint))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (Clam (Ktype, Cint)) (Clam (Ktype, Cvar (0, None))) : Kpi (Ksing Cint, Ksing (Cvar 0))" =
+  let f () =
+    equiv empty
+      (Clam (Ktype, Cint))
+      (Clam (Ktype, Cvar (0, None)))
+      (Kpi (Ksing Cint, Ksing (Cvar (0, None))))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (fst) (flip snd) : Kpi (Ktype, Kpi (Ktype, Ktype))" =
+  let f () =
+    let fst = Clam (Ktype, Clam (Ktype, Cvar (1, None))) in
+    let snd = Clam (Ktype, Clam (Ktype, Cvar (0, None))) in
+    let flip =
+      Clam (Kpi (Ktype, Kpi (Ktype, Ktype)),
+        Clam (Ktype,
+          Clam (Ktype, Capp (Capp (Cvar (2, None), Cvar (0, None)), Cvar (1, None)))))
+    in
+    equiv empty fst (Capp (flip, snd)) (Kpi (Ktype, Kpi (Ktype, Ktype)))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (Cpair (Cexn, Cint)) (Cpair (Cexn, Cint)) : Ksigma (Ktype, Ktype)" =
+  let f () = equiv empty (Cpair (Cexn, Cint)) (Cpair (Cexn, Cint)) (Ksigma (Ktype, Ktype)) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "equiv {} (Cpair (Cexn, Cint)) (Cpair (Cexn, Cbool)) : Ksigma (Ktype, Ktype)" =
+  let f () = equiv empty (Cpair (Cexn, Cint)) (Cpair (Cexn, Cbool)) (Ksigma (Ktype, Ktype)) in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "equiv {} (Cpair (Cexn, Cint)) (Cpair (Cbool, Cint)) : Ksigma (Ktype, Ktype)" =
+  let f () = equiv empty (Cpair (Cexn, Cint)) (Cpair (Cbool, Cint)) (Ksigma (Ktype, Ktype)) in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "equiv {0 : Cbool} (Cpair (Cexn, Cbool)) (Cpair (Cexn, Cvar 0)) : Ksigma (Ktype, Ktype)" =
+  let f () =
+    equiv
+      (extend_kind empty (Ksing Cbool)) 
+      (Cpair (Cexn, Cbool))
+      (Cpair (Cexn, Cvar (0, None)))
+      (Ksigma (Ktype, Ktype))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+(* samekind *)
