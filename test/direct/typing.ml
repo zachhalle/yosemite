@@ -452,12 +452,15 @@ let%expect_test "subkind empty (Ksing Cint) (Ksing (Capp (Clam (Ktype, Cvar 0), 
 
 let%expect_test "subkind empty (Kpi (Ktype, Ktype)) (Kpi (Ktype, Ktype))" =
   let f () = subkind empty (Kpi (Ktype, Ktype)) (Kpi (Ktype, Ktype)) in
-  handle_error show_unit f
+  handle_error show_unit f;
+  [%expect {| () |}]
 
 let%expect_test "subkind empty (Kpi (Ksing Cint, Ktype)) (Kpi (Ktype, Ktype))" =
   let f () = subkind empty (Kpi (Ksing Cint, Ktype)) (Kpi (Ktype, Ktype)) in
-  handle_error show_unit f
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
 
 let%expect_test "subkind empty (Kpi (Ksing Cint, Ktype)) (Kpi (Ktype, Ktype))" =
   let f () = subkind empty (Kpi (Ktype, Ktype)) (Kpi (Ksing Cint, Ktype)) in
-  handle_error show_unit f
+  handle_error show_unit f;
+  [%expect {| () |}]
