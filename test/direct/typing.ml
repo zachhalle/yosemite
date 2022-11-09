@@ -397,3 +397,67 @@ let%expect_test "equiv {0 : Cbool} (Cpair (Cexn, Cbool)) (Cpair (Cexn, Cvar 0)) 
   [%expect {| () |}]
 
 (* samekind *)
+
+let%expect_test "samekind empty Ktype Ktype" =
+  let f () = samekind empty Ktype Ktype in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "samekind empty (Ksing (Cvar 0)) (Ksing (Cvar 0))" =
+  let f () = samekind empty (Ksing (Cvar (0, None))) (Ksing (Cvar (0, None))) in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "samekind {0 : Ktype} (Ksing (Cvar 0)) (Ksing (Cvar 0))" =
+  let f () = samekind (extend_kind empty Ktype) (Ksing (Cvar (0, None))) (Ksing (Cvar (0, None))) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "samekind {} (Kpi (Ktype, Ktype)) (Kpi (Ktype, Ktype))" =
+  let f () = samekind empty (Kpi (Ktype, Ktype)) (Kpi (Ktype, Ktype)) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "samekind {} (Kpi (Ksing Cexn, Ktype)) (Kpi (Ktype, Ktype))" =
+  let f () = samekind empty (Kpi (Ktype, Ktype)) (Kpi (Ktype, Ktype)) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "samekind {} (Ksigma (Ktype, Ktype)) (Ksigma (Ktype, Ktype))" =
+  let f () = samekind empty (Ksigma (Ktype, Ktype)) (Ksigma (Ktype, Ktype)) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "samekind {} (Ksigma (Ksing Cint, Ktype)) (Ksigma (Ktype, Ktype))" =
+  let f () = samekind empty (Ksigma (Ksing Cint, Ktype)) (Ksigma (Ktype, Ktype)) in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+(* subkind *)
+
+let%expect_test "subkind empty Ktype Ktype" =
+  let f () = subkind empty Ktype Ktype in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "subkind {0 : Ksing Cint} (Ksing Cint) (Ksing (Cvar 0))" =
+  let f () = subkind (extend_kind empty (Ksing Cint)) (Ksing Cint) (Ksing (Cvar (0, None))) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "subkind empty (Ksing Cint) (Ksing (Capp (Clam (Ktype, Cvar 0), Cint)))" =
+  let f () = subkind empty (Ksing Cint) (Ksing (Capp (Clam (Ktype, Cvar (0, None)), Cint))) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "subkind empty (Kpi (Ktype, Ktype)) (Kpi (Ktype, Ktype))" =
+  let f () = subkind empty (Kpi (Ktype, Ktype)) (Kpi (Ktype, Ktype)) in
+  handle_error show_unit f
+
+let%expect_test "subkind empty (Kpi (Ksing Cint, Ktype)) (Kpi (Ktype, Ktype))" =
+  let f () = subkind empty (Kpi (Ksing Cint, Ktype)) (Kpi (Ktype, Ktype)) in
+  handle_error show_unit f
+
+let%expect_test "subkind empty (Kpi (Ksing Cint, Ktype)) (Kpi (Ktype, Ktype))" =
+  let f () = subkind empty (Kpi (Ktype, Ktype)) (Kpi (Ksing Cint, Ktype)) in
+  handle_error show_unit f
