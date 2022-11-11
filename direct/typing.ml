@@ -1,5 +1,6 @@
 type kind = Syntax.kind
 type constructor = Syntax.constructor
+type term = Syntax.term
 type context = Context.context
 
 open Syntax
@@ -166,3 +167,14 @@ let rec inhabitant k =
     Cpair (c, inhabitant (subst_kind c k2))
   | Kunit -> Cunit
 
+exception Not_implemented
+
+let check_kind ctx k = ignore ctx; ignore k; raise Not_implemented
+
+let infer_constructor ctx c = ignore ctx; ignore c; raise Not_implemented
+
+let check_constructor ctx c k = ignore ctx; ignore c; ignore k; raise Not_implemented
+
+let infer_term ctx e = ignore ctx; ignore e; raise Not_implemented
+
+let check_term ctx e t = ignore ctx; ignore e; ignore t; raise Not_implemented
