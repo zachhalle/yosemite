@@ -7,6 +7,7 @@ open Syntax
 open Subst
 open Context
 open Type_error
+open Prim_type
 
 let rec natural_kind ctx c =
   match c with
@@ -167,14 +168,173 @@ let rec inhabitant k =
     Cpair (c, inhabitant (subst_kind c k2))
   | Kunit -> Cunit
 
-exception Not_implemented
+let rec check_kind ctx k =
+  match k with
+  | Ktype | Kunit -> ()
+  | Ksing c -> check_constructor ctx c Ktype
+  | Kpi (k1, k2) | Ksigma (k1, k2) -> check_kind ctx k1; check_kind (extend_kind ctx k1) k2
 
-let check_kind ctx k = ignore ctx; ignore k; raise Not_implemented
+and infer_constructor ctx c =
+  match c with
+  | Cvar (i, _) -> selfify c (lookup_kind ctx i)
+  | Clam (k, c) -> check_kind ctx k; Kpi (k, infer_constructor (extend_kind ctx k) c)
+  | Capp (c1, c2) ->
+    begin match infer_constructor ctx c1 with
+    | Kpi (dom, cod) -> check_constructor ctx c2 dom; subst_kind c2 cod
+    | _ -> raise Type_error
+    end
+  | Cpair (c1, c2) -> Ksigma (infer_constructor ctx c1, lift_kind 1 (infer_constructor ctx c2))
+  | Cpi1 c' ->
+    begin match infer_constructor ctx c' with
+    | Ksigma (k1, _) -> k1
+    | _ -> raise Type_error
+    end
+  | Cpi2 c' ->
+    begin match infer_constructor ctx c' with
+    | Ksigma (_, k2) -> k2
+    | _ -> raise Type_error
+    end
+  | Cunit -> Kunit
+  | Carrow (c1, c2) -> check_constructor ctx c1 Ktype; check_constructor ctx c2 Ktype; Ksing c
+  | Cforall (k, c') -> check_kind ctx k; check_constructor (extend_kind ctx k) c' Ktype; Ksing c
+  | Cexists (k, c') -> check_kind ctx k; check_constructor (extend_kind ctx k) c' Ktype; Ksing c
+  | Cprod cl -> List.iter (fun c' -> check_constructor ctx c' Ktype) cl; Ksing c
+  | Csum cl -> List.iter (fun c' -> check_constructor ctx c' Ktype) cl; Ksing c
+  | Crec c' -> check_constructor (extend_kind ctx Ktype) c' Ktype; Ksing c
+  | Ctag c' -> check_constructor ctx c' Ktype; Ksing c
+  | Cref c' -> check_constructor ctx c' Ktype; Ksing c
+  | Cexn | Cbool | Cint | Cchar | Cstring -> Ksing c
 
-let infer_constructor ctx c = ignore ctx; ignore c; raise Not_implemented
+and check_constructor ctx c k = subkind ctx (infer_constructor ctx c) k
 
-let check_constructor ctx c k = ignore ctx; ignore c; ignore k; raise Not_implemented
+let whnf_annot ctx t = check_constructor ctx t Ktype; whnf ctx t
 
-let infer_term ctx e = ignore ctx; ignore e; raise Not_implemented
+module Prim_type = Prim_type_fun (
+  struct
+    type constructor = Syntax.constructor
+    let unit_t   = Cprod []
+    let bool_t   = Cbool
+    let int_t    = Cint
+    let char_t   = Cchar
+    let string_t = Cstring
+  end
+)
 
-let check_term ctx e t = ignore ctx; ignore e; ignore t; raise Not_implemented
+let rec infer_term ctx e =
+  match e with
+  | Tvar v -> lookup_type ctx v
+  | Tlam (v, dom, e') ->
+    check_constructor ctx dom Ktype; Carrow (dom, infer_term (extend_type ctx v dom) e')
+  | Tapp (e1, e2) ->
+    begin match infer_term_whnf ctx e1 with
+    | Carrow (dom, cod) -> check_term ctx e2 dom; cod
+    | _ -> raise Type_error
+    end
+  | Tplam (k, e') -> check_kind ctx k; Cforall(k, infer_term (extend_kind ctx k) e')
+  | Tpapp (e', c) ->
+    begin match infer_term_whnf ctx e' with
+    | Cforall (k, t) -> check_constructor ctx c k; subst_constructor c t
+    | _ -> raise Type_error
+    end
+  | Tpack (c, e', annot) ->
+    begin match whnf_annot ctx annot with
+    | Cexists (k, t) -> check_constructor ctx c k; check_term ctx e' (subst_constructor c t); annot
+    | _ -> raise Type_error
+    end
+  | Tunpack (v, e1, e2) ->
+    begin match infer_term_whnf ctx e1 with
+    | Cexists (k1, t1) ->
+      let ctx' = extend_type (extend_kind ctx k1) v t1 in
+      let t2 = infer_term ctx' e2 in
+      let t2' = subst_constructor (inhabitant k1) t2 in
+      equiv ctx' t2 (lift_constructor 1 t2') Ktype; t2'
+    | _ -> raise Type_error
+    end
+  | Ttuple el -> Cprod (List.map (infer_term ctx) el)
+  | Tproj (e', i) ->
+    begin match infer_term_whnf ctx e' with
+    | Cprod tl -> begin try List.nth tl i with Failure _ -> raise Type_error end 
+    | _ -> raise Type_error
+    end
+  | Tinj (e', i, annot) ->
+    begin match whnf_annot ctx annot with
+    | Csum tl ->
+      let t = try List.nth tl i with Failure _ -> raise Type_error in
+      check_term ctx e' t; annot
+    | _ -> raise Type_error
+    end
+  | Tcase (_, []) -> raise Type_error
+  | Tcase (e', (v1, e1) :: rest) ->
+    begin match infer_term_whnf ctx e' with
+    | Csum [] -> raise Type_error
+    | Csum (t1 :: trest) ->
+      let t = infer_term (extend_type ctx v1 t1) e1 in
+      begin try List.iter2 (fun (vi, ei) ti -> check_term (extend_type ctx vi ti) ei t) rest trest with
+      | Invalid_argument _ -> raise Type_error
+      end;
+      t
+    | _ -> raise Type_error
+    end
+  | Troll (e', annot) ->
+    begin match whnf_annot ctx annot with
+    | Crec t -> check_term ctx e' (subst_constructor annot t); annot
+    | _ -> raise Type_error
+    end
+  | Tunroll e' ->
+    begin match infer_term_whnf ctx e' with
+    | Crec t' as t -> subst_constructor t t'
+    | _ -> raise Type_error
+    end
+  | Ttag (e1, e2) ->
+    begin match infer_term_whnf ctx e1 with
+    | Ctag t -> check_term ctx e2 t; Cexn
+    | _ -> raise Type_error
+    end
+  | Tiftag (e1, e2, v, e3, e4) ->
+    begin match infer_term_whnf ctx e1 with
+    | Ctag t ->
+      check_term ctx e2 Cexn;
+      let t' = infer_term (extend_type ctx v t) e3 in
+      check_term ctx e4 t'; t'
+    | _ -> raise Type_error
+    end
+  | Tnewtag t -> check_constructor ctx t Ktype; Ctag t
+  | Traise (e', t) -> check_term ctx e' Cexn; check_constructor ctx t Ktype; t
+  | Thandle (e1, v, e2) ->
+    let t = infer_term ctx e1 in
+    check_term (extend_type ctx v Cexn) e2 t; t
+  | Tref e' -> Cref (infer_term ctx e')
+  | Tderef e' ->
+    begin match infer_term_whnf ctx e' with
+    | Cref t -> t
+    | _ -> raise Type_error
+    end
+  | Tassign (e1, e2) ->
+    begin match infer_term_whnf ctx e1 with
+    | Cref t -> check_term ctx e2 t; Cprod []
+    | _ -> raise Type_error
+    end
+  | Tbool _ -> Cbool
+  | Tif (e1, e2, e3) ->
+    begin match infer_term_whnf ctx e1 with
+    | Cbool ->
+      let t = infer_term ctx e2 in
+      check_term ctx e3 t; t
+    | _ -> raise Type_error
+    end
+  | Tint _ -> Cint
+  | Tchar _ -> Cchar
+  | Tstring _ -> Cstring
+  | Tlet (v, e1, e2) ->
+    let t = infer_term ctx e1 in
+    infer_term (extend_type ctx v t) e2
+  | Tprim (prim, el) -> 
+    let (tl, t) = Prim_type.prim_type prim in
+    begin try List.iter2 (fun ei ti -> check_term ctx ei ti) el tl with
+    | Invalid_argument _ -> raise Type_error
+    end;
+    t
+
+and infer_term_whnf ctx e = whnf ctx (infer_term ctx e)
+
+and check_term ctx e t = equiv ctx (infer_term ctx e) t Ktype
