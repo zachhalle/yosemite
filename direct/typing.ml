@@ -230,7 +230,7 @@ let rec infer_term ctx e =
     | Carrow (dom, cod) -> check_term ctx e2 dom; cod
     | _ -> raise Type_error
     end
-  | Tplam (k, e') -> check_kind ctx k; Cforall(k, infer_term (extend_kind ctx k) e')
+  | Tplam (k, e') -> check_kind ctx k; Cforall (k, infer_term (extend_kind ctx k) e')
   | Tpapp (e', c) ->
     begin match infer_term_whnf ctx e' with
     | Cforall (k, t) -> check_constructor ctx c k; subst_constructor c t
