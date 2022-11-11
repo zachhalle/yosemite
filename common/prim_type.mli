@@ -1,4 +1,4 @@
-module PrimTypeFun (
+module Prim_type_fun (
   M : sig
     type constructor
 
@@ -10,5 +10,5 @@ module PrimTypeFun (
   end
 ) : sig 
   type constructor = M.constructor
-  val primtype : Prim.primitive -> constructor list * constructor
+  val prim_type : Prim.primitive -> constructor list * constructor
 end

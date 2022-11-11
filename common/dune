@@ -9,8 +9,8 @@
  (preprocess (pps ppx_deriving.show)))
 
 (library
- (name primtype)
- (modules primtype)
+ (name prim_type)
+ (modules prim_type)
  (libraries prim))
 
 (library
