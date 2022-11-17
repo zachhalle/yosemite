@@ -191,7 +191,7 @@ and infer_constructor ctx c =
     end
   | Cpi2 c' ->
     begin match infer_constructor ctx c' with
-    | Ksigma (_, k2) -> k2
+    | Ksigma (_, k2) -> subst_kind (Cpi1 c') k2
     | _ -> raise Type_error
     end
   | Cunit -> Kunit
