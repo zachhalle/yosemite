@@ -464,3 +464,47 @@ let%expect_test "subkind empty (Kpi (Ksing Cint, Ktype)) (Kpi (Ktype, Ktype))" =
   let f () = subkind empty (Kpi (Ktype, Ktype)) (Kpi (Ksing Cint, Ktype)) in
   handle_error show_unit f;
   [%expect {| () |}]
+
+(* check_kind *)
+
+let%expect_test "check_kind empty Kunit" =
+  let f () = check_kind empty Kunit in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_kind empty Ktype" =
+  let f () = check_kind empty Ktype in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_kind empty (Ksing (Cvar 0))" =
+  let f () = check_kind empty (Ksing (Cvar (0, None))) in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "check_kind empty (Kpi (Ktype, Ksing (Cvar (0, None))))" =
+  let f () = check_kind empty (Kpi (Ktype, Ksing (Cvar (0, None)))) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_kind empty (Kpi (Kunit, Ksing (Cvar (0, None))))" =
+  let f () = check_kind empty (Kpi (Kunit, Ksing (Cvar (0, None)))) in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "check_kind empty (Ksigma (Ktype, Ksing (Cvar (0, None))))" =
+  let f () = check_kind empty (Ksigma (Ktype, Ksing (Cvar (0, None)))) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_kind empty (Ksigma (Kunit, Ksing (Cvar (0, None))))" =
+  let f () = check_kind empty (Ksigma (Kunit, Ksing (Cvar (0, None)))) in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "check_kind {0 : Ktype} (Kpi (Kunit, Ksing (Cvar (1, None))))" =
+  let f () = check_kind (extend_kind empty Ktype) (Kpi (Kunit, Ksing (Cvar (1, None)))) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+(* infer_constructor *)
