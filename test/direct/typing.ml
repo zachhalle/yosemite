@@ -508,3 +508,146 @@ let%expect_test "check_kind {0 : Ktype} (Kpi (Kunit, Ksing (Cvar (1, None))))" =
   [%expect {| () |}]
 
 (* infer_constructor *)
+
+let%expect_test "infer_constructor empty (Cvar 0)" =
+  let f () = infer_constructor empty (Cvar (0, None)) in
+  handle_error show_kind f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_constructor {0 : Ktype} (Cvar 0)" =
+  let f () = infer_constructor (extend_kind empty Ktype) (Cvar (0, None)) in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Ksing (Syntax.Cvar (0, None))) |}]
+
+let%expect_test "infer_constructor {1 : Ktype, 0 : Ksing (Cvar 0)} (Cvar 0)" =
+  let f () =
+    let ctx = extend_kind (extend_kind empty Ktype) (Ksing (Cvar (0, None))) in
+    infer_constructor ctx (Cvar (0, None))
+  in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Ksing (Syntax.Cvar (1, (Some 2)))) |}]
+
+let%expect_test "infer_constructor empty (Clam (Ktype, Cstring))" =
+  let f () = infer_constructor empty (Clam (Ktype, Cstring)) in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Kpi (Syntax.Ktype, (Syntax.Ksing Syntax.Cstring))) |}]
+
+let%expect_test "infer_constructor empty (Clam (Ktype, Clam (Ktype, Cvar (0, None))))" =
+  let f () = infer_constructor empty (Clam (Ktype, Clam (Ktype, Cvar (0, None)))) in
+  handle_error show_kind f;
+  [%expect {|
+    (Syntax.Kpi (Syntax.Ktype,
+       (Syntax.Kpi (Syntax.Ktype, (Syntax.Ksing (Syntax.Cvar (0, None))))))) |}]
+
+let%expect_test "infer_constructor empty (Capp (Clam (Ktype, Cvar 0), Cint))" =
+  let f () = infer_constructor empty (Capp (Clam (Ktype, Cvar (0, None)), Cint)) in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Ksing Syntax.Cint) |}]
+
+let%expect_test "infer_constructor empty (Cpair (Cbool, Cvar (0, None)))" =
+  let f () = infer_constructor empty (Cpair (Cbool, Cvar (0, None))) in
+  handle_error show_kind f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_constructor {0 : Ktype} (Cpair (Cbool, Cvar (0, None)))" =
+  let f () = infer_constructor (extend_kind empty Ktype) (Cpair (Cbool, Cvar (0, None))) in
+  handle_error show_kind f;
+  [%expect {|
+    (Syntax.Ksigma ((Syntax.Ksing Syntax.Cbool),
+       (Syntax.Ksing (Syntax.Cvar (1, None))))) |}]
+
+let%expect_test "infer_constructor {0 : Ktype} (Cpi1 (Cpair (Cbool, Cvar 0)))" =
+  let f () =
+    infer_constructor
+      (extend_kind empty Ktype)
+      (Cpi1 (Cpair (Cbool, Cvar (0, None))))
+  in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Ksing Syntax.Cbool) |}]
+
+let%expect_test "infer_constructor {0 : Ktype} (Cpi2 (Cpair (Cbool, Cvar 0)))" =
+  let f () =
+    infer_constructor
+      (extend_kind empty Ktype)
+      (Cpi2 (Cpair (Cbool, Cvar (0, None))))
+  in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Ksing (Syntax.Cvar (0, None))) |}]
+
+let%expect_test "infer_constructor empty (Carrow (Cint, Cstring))" =
+  let f () = infer_constructor empty (Carrow (Cint, Cstring)) in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Ksing (Syntax.Carrow (Syntax.Cint, Syntax.Cstring))) |}]
+
+let%expect_test "infer_constructor {0 : Ktype} (Carrow (Cvar 0, Cstring))" =
+  let f () = infer_constructor (extend_kind empty Ktype) (Carrow (Cvar (0, None), Cstring)) in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Ksing (Syntax.Carrow ((Syntax.Cvar (0, None)), Syntax.Cstring))) |}]
+
+let%expect_test "infer_constructor {0 : Ksing Cint} (Carrow (Cvar 0, Cstring))" =
+  let f () = infer_constructor (extend_kind empty (Ksing Cint)) (Carrow (Cvar (0, None), Cstring)) in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Ksing (Syntax.Carrow ((Syntax.Cvar (0, None)), Syntax.Cstring))) |}]
+
+let%expect_test "infer_constructor empty (Cforall (Ktype, Carrow (Cvar 0, Cvar 0)))" =
+  let f () = infer_constructor empty (Cforall (Ktype, Carrow (Cvar (0, None), Cvar (0, None)))) in
+  handle_error show_kind f;
+  [%expect {|
+    (Syntax.Ksing
+       (Syntax.Cforall (Syntax.Ktype,
+          (Syntax.Carrow ((Syntax.Cvar (0, None)), (Syntax.Cvar (0, None))))))) |}]
+
+let%expect_test "infer_constructor empty (Cexists (Ktype, Cvar 0))" =
+  let f () = infer_constructor empty (Cexists (Ktype, Cvar (0, None))) in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Ksing (Syntax.Cexists (Syntax.Ktype, (Syntax.Cvar (0, None))))) |}]
+
+let%expect_test "infer_constructor empty (Cexists (Ksing Cexn, Cvar 0))" =
+  let f () = infer_constructor empty (Cexists (Ksing Cexn, Cvar (0, None))) in
+  handle_error show_kind f;
+  [%expect {|
+    (Syntax.Ksing
+       (Syntax.Cexists ((Syntax.Ksing Syntax.Cexn), (Syntax.Cvar (0, None))))) |}]
+
+let%expect_test "infer_constructor empty Csum ...." =
+  let f () = infer_constructor empty (Csum [Cexn; Cbool; Cint; Cchar; Cstring]) in
+  handle_error show_kind f;
+  [%expect {|
+    (Syntax.Ksing
+       (Syntax.Csum
+          [Syntax.Cexn; Syntax.Cbool; Syntax.Cint; Syntax.Cchar; Syntax.Cstring])) |}]
+
+let%expect_test "infer_constructor empty Cprod ...." =
+  let f () = infer_constructor empty (Cprod [Cexn; Cbool; Cint; Cchar; Cstring]) in
+  handle_error show_kind f;
+  [%expect {|
+    (Syntax.Ksing
+       (Syntax.Cprod
+          [Syntax.Cexn; Syntax.Cbool; Syntax.Cint; Syntax.Cchar; Syntax.Cstring])) |}]
+
+let%expect_test "infer_constructor empty (Crec (Cvar 0))" =
+  let f () = infer_constructor empty (Crec (Cvar (0, None))) in
+  handle_error show_kind f;
+  [%expect {| (Syntax.Ksing (Syntax.Crec (Syntax.Cvar (0, None)))) |}]
+
+let%expect_test "infer_constructor empty ('a list)" =
+  let f () =
+    infer_constructor empty
+      (Cforall (Ktype,
+        Crec (
+          Csum [
+            Cprod [];
+            Cprod [Cvar (1, None); Cvar (0, None)]])))
+  in
+  handle_error show_kind f;
+  [%expect {|
+    (Syntax.Ksing
+       (Syntax.Cforall (Syntax.Ktype,
+          (Syntax.Crec
+             (Syntax.Csum
+                [(Syntax.Cprod []);
+                  (Syntax.Cprod
+                     [(Syntax.Cvar (1, None)); (Syntax.Cvar (0, None))])
+                  ]))
+          ))) |}]
+
