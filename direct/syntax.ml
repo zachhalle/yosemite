@@ -10,7 +10,7 @@ type kind =
 
 and constructor =
   | Cvar of int * int option
-  | Clam of kind * constructor
+  | Clam of kind * constructor     (* binds *)
   | Capp of constructor * constructor
   | Cpair of constructor * constructor
   | Cpi1 of constructor
