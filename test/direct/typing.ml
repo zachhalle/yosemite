@@ -1054,3 +1054,39 @@ let%expect_test "infer_term {} (:=) : 'a ref -> 'a -> unit" =
        (Syntax.Carrow ((Syntax.Cref (Syntax.Cvar (0, None))),
           (Syntax.Carrow ((Syntax.Cvar (0, None)), (Syntax.Cprod [])))))
        )) |}]
+
+let%expect_test "infer_term {} true : bool" =
+  let f () = infer_term empty (Tbool true) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cbool |}]
+
+let%expect_test "infer_term {} false : bool" =
+  let f () = infer_term empty (Tbool false) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cbool |}]
+
+let%expect_test "infer_term {} if passes" =
+  let f () =
+    let e =
+      Tlam (0, Cbool,
+        Tif (Tvar 0, 
+          Tint 100,
+          Tint 200))
+    in
+    infer_term empty e
+  in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Carrow (Syntax.Cbool, Syntax.Cint)) |}]
+
+let%expect_test "infer_term {} if fails" =
+  let f () =
+    let e =
+      Tlam (0, Cbool,
+        Tif (Tvar 0, 
+          Tint 100,
+          Tchar 'a'))
+    in
+    infer_term empty e
+  in
+  handle_error show_constructor f;
+  [%expect {| Uncaught exception: Type_error. |}]
