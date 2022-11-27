@@ -1002,3 +1002,55 @@ let%expect_test "infer_term {} iftag no match" =
   handle_error show_constructor f;
   [%expect {| Syntax.Cstring |}]
 
+let%expect_test "infer_term {} raise" =
+  let f () = infer_term empty (Tplam (Ktype, Traise (Ttag (Tnewtag (Cprod []), Ttuple []), Cvar (0, None)))) in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Cforall (Syntax.Ktype, (Syntax.Cvar (0, None)))) |}]
+
+let%expect_test "infer_term {} handle" =
+  let f () =
+    let exn = Ttag (Tnewtag Cstring, Tstring "yep") in
+    infer_term empty (Thandle (exn, 0, Tvar 0))
+  in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cexn |}]
+
+let%expect_test "infer_term {} handle more" =
+  let f () = infer_term empty (Thandle (Tstring "yep", 0, Tstring "yep")) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cstring |}]
+
+let%expect_test "infer_term {} ref : 'a -> 'a ref" =
+  let f () = infer_term empty (Tplam (Ktype, Tlam (0, Cvar (0, None), Tref (Tvar 0)))) in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Cforall (Syntax.Ktype,
+       (Syntax.Carrow ((Syntax.Cvar (0, None)),
+          (Syntax.Cref (Syntax.Cvar (0, (Some 1))))))
+       )) |}]
+
+let%expect_test "infer_term {} deref : 'a ref -> 'a" =
+  let f () = infer_term empty (Tplam (Ktype, Tlam (0, Cref (Cvar (0, None)), Tderef (Tvar 0)))) in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Cforall (Syntax.Ktype,
+       (Syntax.Carrow ((Syntax.Cref (Syntax.Cvar (0, None))),
+          (Syntax.Cvar (0, (Some 1)))))
+       )) |}]
+
+let%expect_test "infer_term {} (:=) : 'a ref -> 'a -> unit" =
+  let f () =
+    let e =
+      Tplam (Ktype,
+        Tlam (0, Cref (Cvar (0, None)),
+          Tlam (1, Cvar (0, None),
+            Tassign (Tvar 0, Tvar 1))))
+    in
+    infer_term empty e
+  in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Cforall (Syntax.Ktype,
+       (Syntax.Carrow ((Syntax.Cref (Syntax.Cvar (0, None))),
+          (Syntax.Carrow ((Syntax.Cvar (0, None)), (Syntax.Cprod [])))))
+       )) |}]
