@@ -253,13 +253,13 @@ let rec infer_term ctx e =
   | Ttuple el -> Cprod (List.map (infer_term ctx) el)
   | Tproj (e', i) ->
     begin match infer_term_whnf ctx e' with
-    | Cprod tl -> begin try List.nth tl i with Failure _ -> raise Type_error end 
+    | Cprod tl -> begin try List.nth tl i with _ -> raise Type_error end 
     | _ -> raise Type_error
     end
   | Tinj (e', i, annot) ->
     begin match whnf_annot ctx annot with
     | Csum tl ->
-      let t = try List.nth tl i with Failure _ -> raise Type_error in
+      let t = try List.nth tl i with _ -> raise Type_error in
       check_term ctx e' t; annot
     | _ -> raise Type_error
     end
