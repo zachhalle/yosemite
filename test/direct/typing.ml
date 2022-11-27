@@ -1108,8 +1108,42 @@ let%expect_test "infer_term {} str" =
 
 let%expect_test "infer_term {} let" =
   let f () = infer_term empty (Tlet (0, Tint 0, Tvar 0)) in
-  handle_error show_constructor f
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cint |}]
 
 let%expect_test "infer_term {} let shadow" =
   let f () = infer_term empty (Tlet (0, Tint 0, Tlet (0, Tbool true, Tvar 0))) in
-  handle_error show_constructor f
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cbool |}]
+
+let%expect_test "infer_term {} prim plus" =
+  let f () = infer_term empty (Tprim (Prim.Plus, [Tint 0; Tint 1])) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cint |}]
+
+let%expect_test "infer_term {} prim plus bad" =
+  let f () = infer_term empty (Tprim (Prim.Plus, [Tint 0; Tint 1; Tint 2])) in
+  handle_error show_constructor f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_term {} prim plus no good" = 
+  let f () = infer_term empty (Tprim (Prim.Plus, [Tstring ""; Tint 0])) in
+  handle_error show_constructor f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_term {} int_to_string" =
+  let f () =
+    let e = Tlam (0, Cint, Tprim (Prim.Int_to_string, [Tvar 0])) in
+    infer_term empty e
+  in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Carrow (Syntax.Cint, Syntax.Cstring)) |}]
+
+let%expect_test "infer_term {} print_endline" =
+  let f () = 
+    let concat = Tlam (0, Cstring, Tlam (1, Cstring, Tprim (Prim.Concat, [Tvar 0; Tvar 1]))) in
+    let print = Tlam (0, Cstring, Tprim (Prim.Print, [Tapp (Tapp (concat, Tvar 0), Tstring "\n")])) in
+    infer_term empty print
+  in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Carrow (Syntax.Cstring, (Syntax.Cprod []))) |}]
