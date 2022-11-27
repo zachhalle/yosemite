@@ -1,0 +1,5 @@
+(library
+ (name cps)
+ (modules syntax)
+ (preprocess (pps ppx_deriving.show))
+ (libraries var prim type_error))

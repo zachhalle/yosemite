@@ -1,12 +1,12 @@
 (library
- (name subst)
+ (name subst_direct)
  (modules subst)
  (inline_tests)
  (preprocess (pps ppx_expect ppx_inline_test))
  (libraries base direct))
 
 (library
- (name typing)
+ (name typing_direct)
  (modules typing)
  (inline_tests)
  (preprocess (pps ppx_expect ppx_inline_test))
