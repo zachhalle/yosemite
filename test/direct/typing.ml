@@ -1,9 +1,12 @@
 open Direct
+
 open Context
 open Debug
+open Subst
 open Syntax
 open Typing
 open Type_error
+
 open Printf
 
 let handle_error show_result f =
@@ -650,4 +653,352 @@ let%expect_test "infer_constructor empty ('a list)" =
                      [(Syntax.Cvar (1, None)); (Syntax.Cvar (0, None))])
                   ]))
           ))) |}]
+
+(* infer_term *)
+
+let%expect_test "infer_term {'0' : Cint} (Tvar '0')" =
+  let f () = infer_term (extend_type empty 0 Cint) (Tvar 0) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cint |}]
+
+let%expect_test "infer_term {0 : Ktype ; '9' : Cvar 0} (Tvar '9')" =
+  let f () = infer_term (extend_type (extend_kind empty Ktype) 9 (Cvar (0, None))) (Tvar 9) in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Cvar (0, (Some 1))) |}]
+
+let%expect_test "infer_term {} (Tlam ('0', Cint, Tbool true))" =
+  let f () = infer_term empty (Tlam (0, Cint, Tbool true)) in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Carrow (Syntax.Cint, Syntax.Cbool)) |}]
+
+let%expect_test "infer_term {} (Tplam (Ktype, Tlam ('0', Cvar 0, Tvar '0')))" =
+  let f () = infer_term empty (Tplam (Ktype, Tlam (0, Cvar (0, None), Tvar 0))) in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Cforall (Syntax.Ktype,
+       (Syntax.Carrow ((Syntax.Cvar (0, None)), (Syntax.Cvar (0, (Some 1))))))) |}]
+
+let%expect_test "infer_term {} id[int](3)" =
+  let f () =
+    let id = Tplam (Ktype, Tlam (0, Cvar (0, None), Tvar 0)) in
+    infer_term empty (Tapp (Tpapp (id, Cint), Tint 3)) 
+  in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cint |}]
+
+let%expect_test "infer_term {} id[bool](3)" =
+  let f () =
+    let id = Tplam (Ktype, Tlam (0, Cvar (0, None), Tvar 0)) in
+    infer_term empty (Tapp (Tpapp (id, Cbool), Tint 3)) 
+  in
+  handle_error show_constructor f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_term {} (Tpack (Cint, 3, Cexists (Ktype, Cvar 0)))" =
+  let f () = infer_term empty (Tpack (Cint, Tint 3, Cexists (Ktype, Cvar (0, None)))) in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Cexists (Syntax.Ktype, (Syntax.Cvar (0, None)))) |}]
+
+let%expect_test "infer_term {} (Tpack (Cbool, 3, Cexists (Ktype, Cvar 0)))" =
+  let f () = infer_term empty (Tpack (Cbool, Tint 3, Cexists (Ktype, Cvar (0, None)))) in
+  handle_error show_constructor f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_term {} (Tunpack ('0', Tpack (Cint, 3, Cexists (Ktype, Cvar 0)), Tvar '0'))" =
+  let f () = infer_term empty (Tunpack (0, Tpack (Cint, Tint 3, Cexists (Ktype, Cvar (0, None))), Tvar 0)) in
+  handle_error show_constructor f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_term {} (Tunpack '0', Tpack (string2int*string, .., ..), Capp (Tproj 0 '0', Tproj 1 '0'))" =
+  let f () =
+    let pkg =
+      Tpack (Cstring,
+        Ttuple [Tlam (1, Cstring, Tint 0); Tstring ""],
+          Cexists (Ktype, Cprod [Carrow (Cvar (0, None), Cint); Cvar (0, None)]))
+    in
+    let term = Tunpack (2, pkg, Tapp (Tproj (Tvar 2, 0), Tproj (Tvar 2, 1))) in
+    infer_term empty term
+  in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cint |}]
+
+let%expect_test "infer_term {} (Ttuple [])" =
+  let f () = infer_term empty (Ttuple []) in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Cprod []) |}]
+
+let%expect_test "infer_term {} (Tproj 0 (Ttuple []))" =
+  let f () = infer_term empty (Tproj (Ttuple [], 0)) in
+  handle_error show_constructor f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_term {} (Ttuple [Tint 0; Tchar 'c'; Tstring \"s\"; Tbool false])" =
+  let f () = infer_term empty (Ttuple [Tint 0; Tchar 'c'; Tstring "s"; Tbool false]) in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Cprod [Syntax.Cint; Syntax.Cchar; Syntax.Cstring; Syntax.Cbool]) |}]
+
+let%expect_test "infer_term {} Tproj -1 (Ttuple [Tint 0; Tchar 'c'; Tstring \"s\"; Tbool false])" =
+  let f () = infer_term empty (Tproj (Ttuple [Tint 0; Tchar 'c'; Tstring "s"; Tbool false], -1)) in
+  handle_error show_constructor f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_term {} Tproj 0 (Ttuple [Tint 0; Tchar 'c'; Tstring \"s\"; Tbool false])" =
+  let f () = infer_term empty (Tproj (Ttuple [Tint 0; Tchar 'c'; Tstring "s"; Tbool false], 0)) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cint |}]
+
+let%expect_test "infer_term {} Tproj 1 (Ttuple [Tint 0; Tchar 'c'; Tstring \"s\"; Tbool false])" =
+  let f () = infer_term empty (Tproj (Ttuple [Tint 0; Tchar 'c'; Tstring "s"; Tbool false], 1)) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cchar |}]
+
+let%expect_test "infer_term {} Tproj 2 (Ttuple [Tint 0; Tchar 'c'; Tstring \"s\"; Tbool false])" =
+  let f () = infer_term empty (Tproj (Ttuple [Tint 0; Tchar 'c'; Tstring "s"; Tbool false], 2)) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cstring |}]
+
+let%expect_test "infer_term {} Tproj 3 (Ttuple [Tint 0; Tchar 'c'; Tstring \"s\"; Tbool false])" =
+  let f () = infer_term empty (Tproj (Ttuple [Tint 0; Tchar 'c'; Tstring "s"; Tbool false], 3)) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cbool |}]
+
+let%expect_test "infer_term {} Tproj 4 (Ttuple [Tint 0; Tchar 'c'; Tstring \"s\"; Tbool false])" =
+  let f () = infer_term empty (Tproj (Ttuple [Tint 0; Tchar 'c'; Tstring "s"; Tbool false], 4)) in
+  handle_error show_constructor f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_term {} (nil : int list)" =
+  let f () = 
+    let sum_t = Csum [Cprod []; Cprod [Cint; Cvar (0, None)]] in
+    let list_t = Crec sum_t in
+    let nil = Troll (Tinj (Ttuple [], 0, subst_constructor list_t sum_t), list_t) in
+    infer_term empty nil
+  in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Crec
+       (Syntax.Csum
+          [(Syntax.Cprod []);
+            (Syntax.Cprod [Syntax.Cint; (Syntax.Cvar (0, None))])])) |}]
+
+let%expect_test "infer_term {} (cons 0 nil : int list)" =
+  let f () =
+    let sum_t = Csum [Cprod []; Cprod [Cint; Cvar (0, None)]] in
+    let list_t = Crec sum_t in
+    let nil = Troll (Tinj (Ttuple [], 0, subst_constructor list_t sum_t), list_t) in
+    let cons x xs = Troll (Tinj (Ttuple [x; xs], 1, subst_constructor list_t sum_t), list_t) in
+    infer_term empty (cons (Tint 0) nil)
+  in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Crec
+       (Syntax.Csum
+          [(Syntax.Cprod []);
+            (Syntax.Cprod [Syntax.Cint; (Syntax.Cvar (0, None))])])) |}] 
+
+let%expect_test "infer_term {} (cons 0 (cons 1 (cons 2 (cons 3 nil)))) : int list" =
+  let f () =
+    let sum_t = Csum [Cprod []; Cprod [Cint; Cvar (0, None)]] in
+    let list_t = Crec sum_t in
+    let nil = Troll (Tinj (Ttuple [], 0, subst_constructor list_t sum_t), list_t) in
+    let cons x xs = Troll (Tinj (Ttuple [x; xs], 1, subst_constructor list_t sum_t), list_t) in
+    infer_term empty (cons (Tint 0) (cons (Tint 1) (cons (Tint 2) (cons (Tint 3) nil))))
+  in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Crec
+       (Syntax.Csum
+          [(Syntax.Cprod []);
+            (Syntax.Cprod [Syntax.Cint; (Syntax.Cvar (0, None))])])) |}]
+
+let%expect_test "infer_term {} List.hd : int list -> int" =
+  let f () =
+    let sum_t = Csum [Cprod []; Cprod [Cint; Cvar (0, None)]] in
+    let list_t = Crec sum_t in
+    let raise_t t = Traise (Ttag (Tnewtag (Cprod []), Ttuple []), t) in
+    infer_term
+      empty
+      (Tlam (0, list_t, Tcase (Tunroll (Tvar 0), [(0, raise_t Cint); (1, (Tproj (Tvar 1, 0)))])))
+  in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Carrow (
+       (Syntax.Crec
+          (Syntax.Csum
+             [(Syntax.Cprod []);
+               (Syntax.Cprod [Syntax.Cint; (Syntax.Cvar (0, None))])])),
+       Syntax.Cint)) |}]
+
+let%expect_test "infer_term {} List.tl : int list -> int list" =
+  let f () =
+    let sum_t = Csum [Cprod []; Cprod [Cint; Cvar (0, None)]] in
+    let list_t = Crec sum_t in
+    let raise_t t = Traise (Ttag (Tnewtag (Cprod []), Ttuple []), t) in
+    infer_term
+      empty
+      (Tlam (0, list_t, Tcase (Tunroll (Tvar 0), [(0, raise_t list_t); (1, Tproj (Tvar 1, 1))])))
+  in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Carrow (
+       (Syntax.Crec
+          (Syntax.Csum
+             [(Syntax.Cprod []);
+               (Syntax.Cprod [Syntax.Cint; (Syntax.Cvar (0, None))])])),
+       (Syntax.Crec
+          (Syntax.Csum
+             [(Syntax.Cprod []);
+               (Syntax.Cprod [Syntax.Cint; (Syntax.Cvar (0, None))])]))
+       )) |}]
+
+let%expect_test "infer_term {} nil : 'a list" =
+  let f () =
+    let sum_t = Csum [Cprod []; Cprod [Cvar (1, None); Cvar (0, None)]] in
+    let list_t = Crec sum_t in
+    let nil = Tplam (Ktype, Troll (Tinj (Ttuple [], 0, subst_constructor list_t sum_t), list_t)) in
+    infer_term empty nil
+  in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Cforall (Syntax.Ktype,
+       (Syntax.Crec
+          (Syntax.Csum
+             [(Syntax.Cprod []);
+               (Syntax.Cprod [(Syntax.Cvar (1, None)); (Syntax.Cvar (0, None))])]))
+       )) |}]
+
+let%expect_test "infer_term {} cons : 'a -> 'a list -> 'a list" =
+  let f () =
+    let sum_t = Csum [Cprod []; Cprod [Cvar (1, None); Cvar (0, None)]] in
+    let list_t = Crec sum_t in
+    let cons =
+      Tplam (Ktype,
+        Tlam (0, Cvar (0, None),
+          Tlam (1, list_t,
+            Troll (Tinj (Ttuple [Tvar 0; Tvar 1], 1, subst_constructor list_t sum_t), list_t))))
+    in
+    infer_term empty cons
+  in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Cforall (Syntax.Ktype,
+       (Syntax.Carrow ((Syntax.Cvar (0, None)),
+          (Syntax.Carrow (
+             (Syntax.Crec
+                (Syntax.Csum
+                   [(Syntax.Cprod []);
+                     (Syntax.Cprod
+                        [(Syntax.Cvar (1, None)); (Syntax.Cvar (0, None))])
+                     ])),
+             (Syntax.Crec
+                (Syntax.Csum
+                   [(Syntax.Cprod []);
+                     (Syntax.Cprod
+                        [(Syntax.Cvar (1, None)); (Syntax.Cvar (0, None))])
+                     ]))
+             ))
+          ))
+       )) |}]
+
+let%expect_test "infer_term {} List.hd : 'a list -> 'a" =
+  let f () =
+    let sum_t = Csum [Cprod []; Cprod [Cvar (1, None); Cvar (0, None)]] in
+    let list_t = Crec sum_t in
+    let raise_t t = Traise (Ttag (Tnewtag (Cprod []), Ttuple []), t) in
+    let hd = 
+      Tplam (Ktype,
+        Tlam (0, list_t,
+          Tcase (Tunroll (Tvar 0), [
+            (0, raise_t (Cvar (0, None)));
+            (1, (Tproj (Tvar 1, 0)))
+      ])))
+    in
+    infer_term empty hd
+  in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Cforall (Syntax.Ktype,
+       (Syntax.Carrow (
+          (Syntax.Crec
+             (Syntax.Csum
+                [(Syntax.Cprod []);
+                  (Syntax.Cprod
+                     [(Syntax.Cvar (1, None)); (Syntax.Cvar (0, None))])
+                  ])),
+          (Syntax.Cvar (0, None))))
+       )) |}]
+
+let%expect_test "infer_term {} List.tl : 'a list -> 'a list" =
+  let f () =
+    let sum_t = Csum [Cprod []; Cprod [Cvar (1, None); Cvar (0, None)]] in
+    let list_t = Crec sum_t in
+    let raise_t t = Traise (Ttag (Tnewtag (Cprod []), Ttuple []), t) in
+    let tl = 
+      Tplam (Ktype,
+        Tlam (0, list_t,
+          Tcase (Tunroll (Tvar 0), [
+            (0, raise_t list_t);
+            (1, (Tproj (Tvar 1, 1)))
+      ])))
+    in
+    infer_term empty tl
+  in
+  handle_error show_constructor f;
+  [%expect {|
+    (Syntax.Cforall (Syntax.Ktype,
+       (Syntax.Carrow (
+          (Syntax.Crec
+             (Syntax.Csum
+                [(Syntax.Cprod []);
+                  (Syntax.Cprod
+                     [(Syntax.Cvar (1, None)); (Syntax.Cvar (0, None))])
+                  ])),
+          (Syntax.Crec
+             (Syntax.Csum
+                [(Syntax.Cprod []);
+                  (Syntax.Cprod
+                     [(Syntax.Cvar (1, None)); (Syntax.Cvar (0, None))])
+                  ]))
+          ))
+       )) |}]
+
+let%expect_test "infer_term {} (Tnewtag unit)" = 
+  let f () = infer_term empty (Tnewtag (Cprod [])) in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Ctag (Syntax.Cprod [])) |}]
+
+let%expect_test "infer_term {} (Tnewtag string)" =
+  let f () = infer_term empty (Tnewtag Cstring) in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Ctag Syntax.Cstring) |}]
+
+let%expect_test "infer_term {} (Ttag (unit tag, ()))" =
+  let f () = infer_term empty (Ttag (Tnewtag (Cprod []), Ttuple [])) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cexn |}]
+
+let%expect_test "infer_term {} (Ttag (string tag, str))" =
+  let f () = infer_term empty (Ttag (Tnewtag Cstring, Tstring "hi")) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cexn |}]
+
+let%expect_test "infer_term {} iftag matches" =
+  let f () =
+    let tag = Tnewtag (Cprod []) in
+    let exn = Ttag (tag, Ttuple []) in
+    let e = Tiftag (tag, exn, 0, Tvar 0, Ttuple []) in
+    infer_term empty e
+  in
+  handle_error show_constructor f;
+  [%expect {| (Syntax.Cprod []) |}]
+
+let%expect_test "infer_term {} iftag no match" =
+  let f () =
+    let tag = Tnewtag Cstring in
+    let exn = Ttag (Tnewtag Cint, Tint 0) in
+    let e = Tiftag (tag, exn, 0, Tvar 0, Tstring "") in
+    infer_term empty e
+  in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cstring |}]
 
