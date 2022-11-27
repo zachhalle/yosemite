@@ -1090,3 +1090,18 @@ let%expect_test "infer_term {} if fails" =
   in
   handle_error show_constructor f;
   [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "infer_term {} int" =
+  let f () = infer_term empty (Tint (-100)) in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cint |}]
+
+let%expect_test "infer_term {} char" =
+  let f () = infer_term empty (Tchar '@') in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cchar |}]
+
+let%expect_test "infer_term {} str" =
+  let f () = infer_term empty (Tstring "") in
+  handle_error show_constructor f;
+  [%expect {| Syntax.Cstring |}]
