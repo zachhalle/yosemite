@@ -1105,3 +1105,11 @@ let%expect_test "infer_term {} str" =
   let f () = infer_term empty (Tstring "") in
   handle_error show_constructor f;
   [%expect {| Syntax.Cstring |}]
+
+let%expect_test "infer_term {} let" =
+  let f () = infer_term empty (Tlet (0, Tint 0, Tvar 0)) in
+  handle_error show_constructor f
+
+let%expect_test "infer_term {} let shadow" =
+  let f () = infer_term empty (Tlet (0, Tint 0, Tlet (0, Tbool true, Tvar 0))) in
+  handle_error show_constructor f
