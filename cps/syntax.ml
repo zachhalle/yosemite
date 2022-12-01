@@ -15,7 +15,7 @@ and constructor =
   | Cpair of constructor * constructor
   | Cpi1 of constructor
   | Cpi2 of constructor
-  | Cunit of constructor
+  | Cunit
 
   | Cnot of constructor
   | Cexists of kind * constructor      (* binds *)
@@ -36,11 +36,13 @@ type variable = Var.variable
 type expr =
   | Eapp of value * value
   | Eunpack of variable * value * expr
+  | Eproj of variable * value * int * expr
   | Ecase of value * (variable * expr) list
   | Eiftag of value * value * variable * expr * expr
   | Enewtag of variable * constructor * expr
   | Eref of variable * value * expr
   | Ederef of variable * value * expr
+  | Eassign of value * value * expr
   | Eif of value * expr * expr
   | Elet of variable * value * expr
   | Eprim of variable * Prim.primitive * value list * expr
