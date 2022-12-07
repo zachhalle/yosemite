@@ -1,4 +1,11 @@
 (library
+ (name subst_cps)
+ (modules subst)
+ (inline_tests)
+ (preprocess (pps ppx_expect ppx_inline_test))
+ (libraries base cps prim type_error))
+
+(library
  (name typing_cps)
  (modules typing)
  (inline_tests)
