@@ -2,8 +2,8 @@ This is a type-directed compiler for a subset of ML. It's based on the starter c
 
 The compiler will cover the ML core language. Modules may be added at a later time. The translation follows the strategy outlined in [Morrisett et al](https://www.cs.princeton.edu/~dpw/papers/tal-toplas.pdf):
 
-* Direct is cps-coverted to:
-* Cps, which is closure coverted to:
+* Direct is CPS-coverted to:
+* Cps, which is closure-coverted to:
 * Closure, which is hoisted to:
 * Hoist, which is annotated with explicit allocations, producing:
 * Alloc, which is translated via a more-or-less syntax directed transformation that produces
