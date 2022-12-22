@@ -226,7 +226,7 @@ let%expect_test "subst_kind Cunit (Kpi (Ksing (Cvar 1), Ksing (Cvar 1)))" =
     (Syntax.Kpi ((Syntax.Ksing (Syntax.Cvar (0, None))),
        (Syntax.Ksing Syntax.Cunit))) |}]
 
-let%expect_test "subst_kind Cunit (Kpi (Ksing (Cvar 0), Ksing (Cvar 2)))" =
+let%expect_test "subst_kind Cunit (Kpi (Ksing (Cvar 1), Ksing (Cvar 2)))" =
   let result = subst_kind Cunit (Kpi (Ksing (Cvar (1, None)), Ksing (Cvar (2, None)))) in
   printf "%s\n" (show_kind result);
   [%expect {|
@@ -275,17 +275,17 @@ let%expect_test "subst_con Cunit (Crec (Crec (Crec (Cvar 0))))" =
   printf "%s\n" (show_constructor result);
   [%expect {| (Syntax.Crec (Syntax.Crec (Syntax.Crec (Syntax.Cvar (0, None))))) |}]
 
-let%expect_test "subst_con Cunit (Crec (Crec (Crec (Cvar 0))))" =
+let%expect_test "subst_con Cunit (Crec (Crec (Crec (Cvar 2))))" =
   let result = subst_constructor Cunit (Crec (Crec (Crec (Cvar (2, None))))) in
   printf "%s\n" (show_constructor result);
   [%expect {| (Syntax.Crec (Syntax.Crec (Syntax.Crec (Syntax.Cvar (2, None))))) |}]
 
-let%expect_test "subst_con Cunit (Crec (Crec (Crec (Cvar 0))))" =
+let%expect_test "subst_con Cunit (Crec (Crec (Crec (Cvar 3))))" =
   let result = subst_constructor Cunit (Crec (Crec (Crec (Cvar (3, None))))) in
   printf "%s\n" (show_constructor result);
   [%expect {| (Syntax.Crec (Syntax.Crec (Syntax.Crec Syntax.Cunit))) |}]
  
-let%expect_test "subst_con Cunit (Crec (Crec (Crec (Cvar 0))))" =
+let%expect_test "subst_con Cunit (Crec (Crec (Crec (Cvar 4))))" =
   let result = subst_constructor Cunit (Crec (Crec (Crec (Cvar (4, None))))) in
   printf "%s\n" (show_constructor result);
   [%expect {| (Syntax.Crec (Syntax.Crec (Syntax.Crec (Syntax.Cvar (3, None))))) |}]
@@ -367,7 +367,7 @@ let%expect_test "subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, Cvar 0
           ))
        )) |}]
 
-let%expect_test "subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, Cvar 0)))" =
+let%expect_test "subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, Cvar 1)))" =
   let result = subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, expr_of (Vroll (Vtuple [], Cvar (1, None))))))
   in
   printf "%s\n" (show_expr result);
@@ -380,7 +380,7 @@ let%expect_test "subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, Cvar 0
           ))
        )) |}]
 
-let%expect_test "subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, Cvar 0)))" =
+let%expect_test "subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, Cvar 2)))" =
   let result = subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, expr_of (Vroll (Vtuple [], Cvar (2, None))))))
   in
   printf "%s\n" (show_expr result);
@@ -392,4 +392,15 @@ let%expect_test "subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, Cvar 0
           ))
        )) |}]
 
-
+let%expect_test "subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, Cvar 3)))" =
+  let result = subst_expr Cexn (Eunpack (0, Vvar 1, Eunpack (2, Vvar 3, expr_of (Vroll (Vtuple [], Cvar (3, None))))))
+  in
+  printf "%s\n" (show_expr result);
+  [%expect {|
+    (Syntax.Eunpack (0, (Syntax.Vvar 1),
+       (Syntax.Eunpack (2, (Syntax.Vvar 3),
+          (Syntax.Elet (0,
+             (Syntax.Vroll ((Syntax.Vtuple []), (Syntax.Cvar (2, None)))),
+             Syntax.Ehalt))
+          ))
+       )) |}]
