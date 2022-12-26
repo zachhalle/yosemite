@@ -19,7 +19,7 @@ module ContextFun (
 
   let lookup_kind ({ kctx ; _ } : context) i =
     try Subst.lift_kind (i+1) (List.nth kctx i) with
-    | Failure _ -> raise Type_error
+    | Failure _  | Invalid_argument _ -> raise Type_error
 
   let lookup_type ({ ksize ; tctx ; _ } : context) v =
     let n, c = try Dict.find v tctx with Not_found -> raise Type_error in
