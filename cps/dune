@@ -1,5 +1,5 @@
 (library
  (name cps)
- (modules context debug subst syntax)
+ (modules context debug subst syntax typing)
  (preprocess (pps ppx_deriving.show))
  (libraries depth prim type_error var))
