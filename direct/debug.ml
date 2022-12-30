@@ -43,13 +43,13 @@ and depth_con path c =
     depth_con (0 :: path) c
   | Cunit -> bottom
   | Carrow (c1, c2) -> join path (depth_con (0 :: path) c1) (depth_con (1 :: path) c2)
-  | Cforall (k, c) -> join path (depth_kind (0 :: path) k) (depth_con (1 :: path) c)
-  | Cexists (k, c) -> join path (depth_kind (0 :: path) k) (depth_con (1 :: path) c)
+  | Cforall (k, c) -> join path (depth_kind (0 :: path) k) (dec path (depth_con (1 :: path) c))
+  | Cexists (k, c) -> join path (depth_kind (0 :: path) k) (dec path (depth_con (1 :: path) c))
   | Cprod cl ->
     fst (List.fold_left (fun (d, i) c -> (join path (depth_con (i :: 0 :: path) c) d, i+1)) (bottom, 0) cl)
   | Csum cl ->
     fst (List.fold_left (fun (d, i) c -> (join path (depth_con (i :: 0 :: path) c) d, i+1)) (bottom, 0) cl)
-  | Crec c -> depth_con (0 :: path) c
+  | Crec c -> dec path (depth_con (0 :: path) c)
   | Ctag c -> depth_con (0 :: path) c
   | Cref c -> depth_con (0 :: path) c
   | Cexn | Cbool | Cint | Cchar | Cstring -> bottom

@@ -35,7 +35,7 @@ module ContextFun (
       kctx = kctx ;
       tctx = Dict.add v (ksize, impose_constructor ksize c) tctx }
 
-  let ksize ({ ksize ; _} : context) = ksize
+  let ksize ({ ksize ; _ } : context) = ksize
 end
 
 include ContextFun(
