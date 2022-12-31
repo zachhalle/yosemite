@@ -2,4 +2,4 @@
  (name cps)
  (modules context debug subst syntax typing)
  (preprocess (pps ppx_deriving.show))
- (libraries depth prim type_error var))
+ (libraries depth prim prim_type type_error var))
