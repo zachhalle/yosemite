@@ -5,15 +5,15 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github zachhalle/yosemite))
 
-(authors "Author Name")
+(authors "Zach Halle")
 
-(maintainers "Maintainer Name")
+(maintainers "Zach Halle")
 
 (license LICENSE)
 
-(documentation https://url/to/documentation)
+(documentation https://github.com/zachhalle/yosemite)
 
 (package
  (name yosemite)
