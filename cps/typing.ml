@@ -87,6 +87,11 @@ and equiv_path ctx c1 c2 =
     end
   | Cpi1 c1', Cpi1 c2' ->
     begin match equiv_path ctx c1' c2' with
+    | Ksigma (k1, _) -> k1
+    | _ -> raise Type_error
+    end
+  | Cpi2 c1', Cpi2 c2' ->
+    begin match equiv_path ctx c1' c2' with
     | Ksigma (_, k2) -> subst_kind (Cpi1 c1') k2
     | _ -> raise Type_error
     end
