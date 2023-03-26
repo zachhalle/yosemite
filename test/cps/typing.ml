@@ -652,4 +652,141 @@ let%expect_test "infer_constructor empty ('a list)" =
                   ]))
           ))) |}]
 
+let expr_of (v : value) : expr = Elet (0, v, Ehalt)
 
+let%expect_test "check_expr {'0' : Cint} (Tvar '0')" =
+  let f () = check_expr (extend_type empty 0 Cint) (expr_of (Vvar 0)) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {0 : Ktype ; '9' : Cvar 0} (Vvar '9')" =
+  let f () = check_expr (extend_type (extend_kind empty Ktype) 9 (Cvar (0, None))) (expr_of (Vvar 9)) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} (Vlam ('0', Cint, Vbool true))" =
+  let f () = check_expr empty (expr_of (Vlam (0, Cint, expr_of (Vbool true)))) in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} (Eunpack (1, Vpack (Cprod [], Vtuple [], Cexists (Ktype, Cvar 0)), Vvar 1))" =
+  let f () =
+    check_expr empty
+      (Eunpack (1, Vpack (Cprod [], Vtuple [], Cexists (Ktype, Cvar (0, None))), expr_of (Vvar 1)))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} (Eproj (1, Vtuple [], 0, Vvar 1))" =
+  let f () =
+    check_expr empty
+      (Eproj (1, Vtuple [], 0, expr_of (Vvar 1)))
+  in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "check_expr {} (Eproj (1, Vtuple [string, int], 0, Vvar 1))" =
+  let f () =
+    check_expr empty
+      (Eproj (1, Vtuple [Vstring ""; Vint 0], 0, expr_of (Vvar 1)))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} (Eproj (1, Vtuple [string, int], 1, Vvar 1))" =
+  let f () =
+    check_expr empty
+      (Eproj (1, Vtuple [Vstring ""; Vint 0], 1, expr_of (Vvar 1)))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} (Eproj (1, Vtuple [string, int], 2, Vvar 1))" =
+  let f () =
+    check_expr empty
+      (Eproj (1, Vtuple [Vstring ""; Vint 0], 2, expr_of (Vvar 1)))
+  in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "check_expr {} (Ecase (Vinj (Vint 0, 0, Csum [Cint; Cstring]), [0, Vvar 0 + 1; 1, Vvar 1 ^ \"\"]))" =
+  let f () =
+    check_expr empty
+      (Ecase (Vinj (Vint 0, 0, Csum [Cint; Cstring]), 
+        [(0, Eprim (2, Plus, [Vvar 0; Vint 1], expr_of (Vvar 2)));
+         (1, Eprim (2, Concat, [Vvar 1; Vstring ""], expr_of (Vvar 2)))]))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} (Ecase (Vinj (Vint 0, 0, Csum [Cint; Cstring]), [0, Vvar 0 + 1; 1, Vvar 1 ^ \"\"]))" =
+  let f () =
+    check_expr empty
+      (Ecase (Vinj (Vstring "", 1, Csum [Cint; Cstring]), 
+        [(0, Eprim (2, Plus, [Vvar 0; Vint 1], expr_of (Vvar 2)));
+         (1, Eprim (2, Concat, [Vvar 1; Vstring ""], expr_of (Vvar 2)))]))
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} iftag matches" =
+  let f () =
+    let with_tag e = Enewtag (0, Cprod [], e) in
+    let exn = Vtag (Vvar 0, Vtuple []) in
+    let e = Eiftag (Vvar 0, exn, 1, expr_of (Vvar 1), expr_of (Vtuple [])) in
+    check_expr empty (with_tag e)
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} iftag no match" =
+  let f () =
+    let with_tag e = Enewtag (0, Cstring, Enewtag (1, Cint, e)) in
+    let exn = Vtag (Vvar 1, Vint 0) in
+    let e = Eiftag (Vvar 0, exn, 2, expr_of (Vvar 2), expr_of (Vstring "")) in
+    check_expr empty (with_tag e)
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} ref deref" =
+  let f () =
+    let e = Eref (0, Vint 0, Ederef (1, Vvar 0, expr_of (Vvar 1))) in
+    check_expr empty e
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} assign" =
+  let f () =
+    let e = Eref (0, Vint 0, Eassign (Vvar 0, Vint 1, Ederef (1, Vvar 0, expr_of (Vvar 1)))) in
+    check_expr empty e
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} bad assign" =
+  let f () =
+    let e = Eref (0, Vint 0, Eassign (Vvar 0, Vstring "", Ederef (1, Vvar 0, expr_of (Vvar 1)))) in
+    check_expr empty e
+  in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+let%expect_test "check_expr {} if" =
+  let f () =
+    let e = Eif (Vbool true, expr_of (Vint 0), expr_of (Vint 1)) in
+    check_expr empty e
+  in
+  handle_error show_unit f;
+  [%expect {| () |}]
+
+let%expect_test "check_expr {} bad if" =
+  let f () =
+    let e = Eif (Vstring "", expr_of (Vstring ""), expr_of (Vint 1)) in
+    check_expr empty e
+  in
+  handle_error show_unit f;
+  [%expect {| Uncaught exception: Type_error. |}]
+
+(* infer_value *)
